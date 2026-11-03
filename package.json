@@ -1,0 +1,39 @@
+{
+  "name": "muskelklicker",
+  "productName": "Muskelklicker",
+  "version": "1.0.0",
+  "description": "Muskelklicker – Gym-Klicker",
+  "author": "Leon",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win --publish always"
+  },
+  "dependencies": {
+    "electron-updater": "^6.8.11"
+  },
+  "devDependencies": {
+    "electron": "^45.2.1",
+    "electron-builder": "^26.18.0"
+  },
+  "build": {
+    "appId": "de.leon.muskelklicker",
+    "productName": "Muskelklicker",
+    "files": ["main.js", "app/**/*", "package.json"],
+    "directories": { "buildResources": "build", "output": "dist" },
+    "win": {
+      "target": [{ "target": "nsis", "arch": ["x64"] }],
+      "icon": "build/icon.ico",
+      "artifactName": "Muskelklicker-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": true,
+      "perMachine": false,
+      "createDesktopShortcut": "always",
+      "createStartMenuShortcut": true,
+      "shortcutName": "Muskelklicker",
+      "deleteAppDataOnUninstall": false
+    },
+    "publish": [{ "provider": "github", "releaseType": "release" }]
+  }
+}
