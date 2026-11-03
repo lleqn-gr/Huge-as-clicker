@@ -24,6 +24,12 @@ jobs:
         shell: bash
         run: npm version "1.0.${{ github.run_number }}" --no-git-tag-version --allow-same-version
 
+      - name: Versionsmarke anlegen
+        shell: bash
+        run: |
+          git tag "v1.0.${{ github.run_number }}"
+          git push origin "v1.0.${{ github.run_number }}"
+
       - name: Pakete installieren
         run: npm install
 
