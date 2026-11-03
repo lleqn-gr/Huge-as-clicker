@@ -24,16 +24,19 @@ jobs:
         shell: bash
         run: npm version "1.0.${{ github.run_number }}" --no-git-tag-version --allow-same-version
 
-      - name: Versionsmarke anlegen
-        shell: bash
-        run: |
-          git tag "v1.0.${{ github.run_number }}"
-          git push origin "v1.0.${{ github.run_number }}"
-
       - name: Pakete installieren
         run: npm install
 
-      - name: App bauen und veröffentlichen
-        run: npx electron-builder --win --publish always
+      - name: App bauen
+        run: npx electron-builder --win --publish never
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Release mit allen Dateien veröffentlichen
+        shell: bash
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          V="1.0.${{ github.run_number }}"
+          ls dist
+          gh release create "v$V" dist/*.exe dist/*.blockmap dist/latest.yml --title "$V" --notes "Muskelklicker $V" --target "${{ github.sha }}"
