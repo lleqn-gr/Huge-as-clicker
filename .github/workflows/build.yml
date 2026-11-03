@@ -1,0 +1,33 @@
+# Baut bei jedem Hochladen automatisch eine neue Windows-Version
+# und veröffentlicht sie unter "Releases". Die installierten Apps holen sie sich von dort.
+name: Windows-App bauen
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Versionsnummer automatisch hochzählen
+        shell: bash
+        run: npm version "1.0.${{ github.run_number }}" --no-git-tag-version --allow-same-version
+
+      - name: Pakete installieren
+        run: npm install
+
+      - name: App bauen und veröffentlichen
+        run: npx electron-builder --win --publish always
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
