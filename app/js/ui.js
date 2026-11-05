@@ -124,6 +124,8 @@ U.refresh = () => { const P = $('pane'); P._keep = [tab, P.scrollTop]; U.quick()
 U.initLayout = function () { if (mobile()) tab = 'train'; let was = mobile(); addEventListener('resize', () => { const m = mobile(); if (m !== was) { was = m; if (m) tab = 'train'; U.renderTab(); } }); };
 
 /* Info-Knopf: kurze Erklärung erst auf Antippen */
+// Logo-Schrift: weiß, außer die Sponsorfarbe ist so hell, dass Weiß schlecht lesbar wäre (Kontrast < 4,5:1)
+const logoInk = col => { const m = /^#?([0-9a-f]{6})$/i.exec(col || ''); if (!m) return '#fff'; const L = [0, 2, 4].map(i => { const v = parseInt(m[1].slice(i, i + 2), 16) / 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }), lum = .2126 * L[0] + .7152 * L[1] + .0722 * L[2]; return 1.05 / (lum + .05) >= 4.5 ? '#fff' : '#141414'; };
 const ib = t => `<button class="ib" data-info="${esc(t)}" aria-label="Info">i</button>`;
 U.info = function (btn) { let pop = document.getElementById('infoPop'); if (!pop) { pop = document.createElement('div'); pop.id = 'infoPop'; document.body.appendChild(pop); pop.onclick = () => { pop.hidden = true; }; }
   if (!pop.hidden && pop._b === btn) { pop.hidden = true; return; } pop._b = btn; pop.textContent = btn.dataset.info; pop.hidden = false;
@@ -324,7 +326,7 @@ function paneShop(P) {
   h += `<h3 class="sh">Sponsoren ${ib('Ein Vertrag gleichzeitig. Bringt langsam Diamanten (auch offline) und einen kleinen XP- und Ruhm-Bonus.')}</h3>`;
   MK.SPONSORS.forEach(sp => { const ok = MK.sponsorOk(sp), act = S.sponsor === sp.id, inc = sp.inc * (1 + MK.bonus().sponsor), had = (S.sponsored || []).includes(sp.id);
     const list = sp.req.map(r => { const m = MK.reqMet(r), hv = MK.reqHave(r); return `<li class="${m ? 'ok' : 'no'}">${m ? '✓' : '✗'} ${MK.reqText(r)}${!m && hv != null ? ` <small>(du: ${hv})</small>` : ''}</li>`; }).join('');
-    h += `<div class="card spon ${act ? 'act' : ''} ${ok || act ? '' : 'locked'}" style="--sc:${sp.col}"><div class="row"><div><h4><span class="logo" style="background:${sp.col}">${sp.logo}</span> ${sp.name}</h4><p class="pitch">${sp.pitch}</p><div class="perks"><span>💎 ${MK.fmt1(sp.dph * (1 + MK.bonus().sponsor))} / Std</span><span>+${Math.round(sp.boost.xp * 100)} % XP</span><span>+${Math.round(sp.boost.fame * 100)} % Ruhm</span>${sp.bonus && !had ? `<span class="gift">🎁 ${MK.rewardText(sp.bonus)}</span>` : ''}</div></div>
+    h += `<div class="card spon ${act ? 'act' : ''} ${ok || act ? '' : 'locked'}" style="--sc:${sp.col}"><div class="row"><div><h4><span class="logo" style="background:${sp.col};color:${logoInk(sp.col)}">${sp.logo}</span> ${sp.name}</h4><p class="pitch">${sp.pitch}</p><div class="perks"><span>💎 ${MK.fmt1(sp.dph * (1 + MK.bonus().sponsor))} / Std</span><span>+${Math.round(sp.boost.xp * 100)} % XP</span><span>+${Math.round(sp.boost.fame * 100)} % Ruhm</span>${sp.bonus && !had ? `<span class="gift">🎁 ${MK.rewardText(sp.bonus)}</span>` : ''}</div></div>
       ${act ? `<button class="btn ok" data-spon="${sp.id}">Aktiv</button>` : `<button class="btn" data-spon="${sp.id}" data-pr="0" ${ok ? '' : `data-need="${esc('Noch nicht erfüllt: ' + sp.req.filter(r => !MK.reqMet(r)).map(MK.reqText).join(', '))}"`}>Unterschreiben</button>`}</div>
       ${act ? '' : `<ul class="skreq light">${list}</ul>`}</div>`; });
   h += `<div class="card"><div class="row"><div><h4>💎 Haustiere & Diamanten</h4><p class="small">Jetzt im Shop oben neben deinen Diamanten.</p></div><button class="btn dia" data-goshop="1">Zum Shop</button></div></div>`;
