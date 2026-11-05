@@ -949,6 +949,45 @@ button.bought,.btn.bought{animation:boughtPop .5s cubic-bezier(.3,1.9,.45,1)}
 .card.biz .bline .btn{font-size:14px;padding:4px 10px}
 .card.biz.open{box-shadow:3px 3px 0 var(--ink)}
 @media (max-width:420px){.card.biz .bizhead{grid-template-columns:34px minmax(0,1fr) auto;gap:8px;padding:8px}.bicon{width:34px;height:34px;font-size:19px;border-radius:6px}.card.biz .binfo h4{font-size:15.5px}.card.biz .pw{font-size:12px}.card.biz .bbuy{min-width:76px;padding:5px 7px;font-size:14px}.card.biz .bbuy small{font-size:11px}.bsech{font-size:17px}.bmore{font-size:12px;padding:6px 10px}}
+
+/* ===== Lesbarkeit (Prüfung aller Reiter): Schrift mindestens 11 px, Kontrast nach WCAG AA ===== */
+/* Knöpfe: gleiche Farbfamilie, nur so viel dunkler, dass weiße Schrift gut lesbar ist (≥ 4,5:1) */
+.btn{--acc:#cc482b}
+.btn.dia,.pane .btn[data-pr].dia{background-color:#127f9b}
+.bready,.newtag,.pack em{background:#c2410c;color:#fff}
+/* grüne Haken-Texte etwas dunkler */
+.okc,.skreq li.ok,.card .okc{color:#17784a}
+/* Mindestgröße 11 px für alle Beschriftungen */
+.chip.hc small{font-size:11px}
+.chip.hc.c-power small{font-size:11px!important}
+.biztop small,.wtier,.gcard small,.gcard em,.opt small,.day small,.skreq small,.trhead small,.newtag,.pack em,.wbuy small{font-size:11px}
+.trhead small{font-size:11px}
+/* blasse Texte: Farbe statt Durchsichtigkeit */
+.wbuy small{opacity:1;color:var(--muted)}
+.pane.wardmode>.wbuy p.small,.wbuy p.small{opacity:1;color:var(--muted)}
+.day small,.tch em{color:#4a4438}
+.wtech{color:var(--ink)}
+.mat{color:var(--ink)}
+@media (max-width:900px){
+  .tab span{font-size:11px;letter-spacing:-.2px}
+  .app > .side .tab{padding-left:1px;padding-right:1px}
+  .wt .nm{font-size:11px}
+}
+@media (max-width:520px){
+  .chip.hc small{font-size:11px;letter-spacing:0;text-transform:none}
+  .chip.hc.c-lab small,.chip.hc.c-shop small{font-size:11px}
+}
+@media (max-width:380px){.chip.hc small{font-size:11px!important}.tab span{letter-spacing:-.45px}.app > .side .tab{padding-left:0;padding-right:0}}
+
+.card.biz small.own{color:var(--acc2)}
+.buyn .opt{color:var(--ink)}
+.card h4 small.newtag,small.newtag{color:#fff}
+.card h4 small.mat,small.mat{color:var(--ink)}
+.pane.wardmode>.wbuy.empty{opacity:1}
+.noc{color:#a93226}
+.card.prep small,.mac small{font-size:11px}
+#skills .skreq li.ok{color:#5fd38d}
+.exchip .tch em{color:#4a4438}
 </style>
 <script src="js/data.js"></script>
 <script src="js/lines.js"></script>
