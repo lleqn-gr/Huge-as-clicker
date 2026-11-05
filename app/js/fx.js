@@ -55,7 +55,7 @@ function gatherPt() { const Sc = MK.Scene; if (!Sc || !Sc.geo) return null; cons
 /* ---------- XP-Kugeln & Münzen ---------- */
 // k: 'xp' | 'coin', v: Wert, (x,y) Bildschirm, opt: { g, auto }
 F.orb = function (k, v, x, y, opt) {
-  opt = opt || {}; if (!cv || !(v > 0)) return;
+  opt = opt || {}; if (!cv || !(v > 0) || !isFinite(v)) return; // ∞/NaN darf nie in die Zähler
   if (!opt.force && ((MK.UI && MK.UI.view && MK.UI.view() !== 'gym') || !document.getElementById('skills').hidden || (MK.UI && MK.UI.tab && MK.UI.tab() === 'ward'))) return; // Imperium, Skillbaum, Umkleide: nichts fliegt durchs Bild
   if (k === 'xp') F.pend.xp[opt.g] = (F.pend.xp[opt.g] || 0) + v; else F.pend.money += v;
   // zu viele unterwegs → in eine vorhandene Kugel gleicher Art einrechnen (wird etwas größer)
@@ -191,7 +191,7 @@ const R = { money: null, power: null, xps: 0 }; let xpsB = new Array(20).fill(0)
 MK.xpRate = xp => { xpsAcc += xp; };
 F.hold = { money: null }; // Rückkehr-Szene: Anzeige bleibt auf dem alten Wert, bis eingesammelt wird
 const setT = (el, v) => { if (el && el._t !== v) { el._t = v; el.textContent = v; } };
-function roll(cur, target, dt, speed) { if (cur == null || !isFinite(cur)) return target; const d = target - cur; if (Math.abs(d) <= Math.max(.5, Math.abs(target) * 1e-6)) return target; return cur + d * (1 - Math.exp(-dt * (speed || 7))); }
+function roll(cur, target, dt, speed) { if (!isFinite(target)) return cur != null && isFinite(cur) ? cur : 0; if (cur == null || !isFinite(cur)) return target; const d = target - cur; if (Math.abs(d) <= Math.max(.5, Math.abs(target) * 1e-6)) return target; return cur + d * (1 - Math.exp(-dt * (speed || 7))); }
 const fmtMoney = v => (v >= 1e5 && v < 1e6 ? MK.fmt1(v / 1e3) + ' Tsd' : MK.fmt(v)) + ' €';
 function rollTick(dt) {
   const S = MK.S; if (!S) return;
@@ -199,7 +199,7 @@ function rollTick(dt) {
   xpsT += dt; while (xpsT >= .25) { xpsT -= .25; xpsB[xpsI] = xpsAcc; xpsAcc = 0; xpsI = (xpsI + 1) % xpsB.length; }
   const xps = xpsB.reduce((a, v) => a + v, 0) / 5; R.xps = roll(R.xps, xps, dt, 3);
   // Geld
-  const mT = F.hold.money != null ? F.hold.money : Math.max(0, S.money - F.pend.money); const m0 = R.money; R.money = roll(R.money, mT, dt, 8);
+  if (!isFinite(F.pend.money)) F.pend.money = 0; let mT = F.hold.money != null ? F.hold.money : Math.max(0, S.money - F.pend.money); if (!isFinite(mT)) mT = isFinite(S.money) ? S.money : 0; const m0 = R.money; R.money = roll(R.money, mT, dt, 8);
   setT($('money'), fmtMoney(R.money));
   const mc = $('money') && $('money').closest('.chip'); if (mc) { const jump = m0 != null && mT > m0 * 1.002 + 1; mc.classList.toggle('rolling', jump); if (F.moneyKick) { F.moneyKick = Math.max(0, F.moneyKick - dt * 3); mc.style.setProperty('--k', F.moneyKick.toFixed(3)); } }
   // Power
