@@ -188,7 +188,7 @@ function paneComp(P) {
 U.afterCompStart = () => { if (!mobile()) $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); U.quick(); };
 
 /* --- Imperium (Cookie-Clicker-Prinzip) --- */
-let bizN = 1, bizStat = false; const bizOpenSet = new Set();
+let bizN = 1, bizStat = false; const bizOpenSet = new Set(), bizSecClosed = new Set();
 /* Imperium-Statistik: Einkommen der letzten Stunden (log. Skala) und Anteil je Geschäft */
 function bizStats() {
   const S = MK.S, pts = S.hist.mins.filter(m => m[3] != null).slice(-360), W = 320, Hh = 110, own = MK.BIZ.filter(B => MK.bizCount(B.id) > 0), tot = MK.income() || 1;
@@ -209,44 +209,67 @@ U.view = () => (tab === 'biz' ? 'biz' : 'gym'); U.tab = () => tab;
 U.openBiz = id => { bizOpenSet.add(id); if (tab !== 'biz') go('biz'); const P = $('pane'); paneBiz(P); U.liveBuy(); const el = P.querySelector(`[data-bopen="${id}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); MK.Audio.play('pop'); };
 function paneBiz(P) {
   const S = MK.S, inc = MK.income(), cp = MK.clickPct(), xm = MK.bonus().xpMul || 1, f = v => v < 10 ? MK.fmt1(v) : MK.fmt(v);
-  let h = `<div class="biztop"><div><small>Einkommen</small><b>${f(inc)} €/s</b></div><div><small>Muskel-Turbo</small><b>×${MK.fmt1(xm)} XP</b></div><div><small>Level-Bonus</small><b>+${Math.round(MK.totalLv() * (1 + (MK.bonus().lvInc || 0) * 100))} %</b></div></div>
-    ${(() => { const M = MK.MILES[S.mile]; if (!M) return ''; const prev = S.mile ? MK.MILES[S.mile - 1][0] : 0, k = Math.max(0, Math.min(1, Math.log10(Math.max(1, S.stats.earned) / Math.max(1, prev)) / Math.log10(M[0] / Math.max(1, prev))));
-      return `<div class="mile"><span>Meilenstein: <b>${MK.fmt(M[0])} €</b> verdient → +${M[1] * 20} Ruhm</span><i style="width:${Math.round(k * 100)}%"></i></div>`; })()}
-    <div class="buyn">Kaufen: ${[1, 10, 100, 'max'].map(n => `<button class="opt" data-bizn="${n}" aria-pressed="${bizN === n}">${n === 'max' ? 'Max' : '×' + n}</button>`).join('')}<button class="opt stbtn" data-bstat="1" aria-pressed="${bizStat}">📊 Statistik</button></div>
-    ${bizStat ? bizStats() : ''}`;
-  { const ol = S.offLv || 0, mx = ol >= MK.OFF_MAX, oc = MK.offCost();
-    h += `<div class="card clickup"><div class="row"><div><h4>🌙 Nachtschicht ${ib('Was dein Imperium verdient, während das Spiel zu ist. Start 5 %, jede Stufe +1 %, höchstens 15 %.')}</h4><p class="small">Offline ${Math.round(MK.offRate() * 100)} % · Stufe ${ol}/${MK.OFF_MAX}</p></div>${mx ? '<span class="tag">Max</span>' : `<button class="btn" data-off="1" data-pr="${oc}">${MK.fmt(oc)} €</button>`}</div></div>`; }
-  const cu = MK.CLICK_UPS[S.clickUp];
-  if (cu) { const ok = MK.bizCount(cu.need) >= 1, c = Math.ceil(cu.cost * MK.shopMul());
-    h += `<div class="card clickup ${ok ? '' : 'locked'}"><div class="row"><div><h4>🖱️ ${cu.name}</h4><p>Klick bringt +${Math.round(cu.pct * 100)} % deines €/s${ok ? '' : ' · 🔒 ' + MK.BIZ.find(B => B.id === cu.need).name}</p></div>${ok ? `<span class="bbtns"><button class="btn" data-bup="click:${S.clickUp}" data-pr="${c}">${MK.fmt(c)} €</button><button class="btn dia" data-bupd="click:${S.clickUp}" data-pr="${MK.diaPrice(cu.cost)}" data-cur="dia">${MK.diaPrice(cu.cost)} 💎</button></span>` : '<span class="tag soon">Bald</span>'}</div></div>`; }
-  MK.BIZ.forEach((B, i) => { const open = MK.bizOpen(B), o = MK.bizCount(B.id);
-    if (!open) return;
+  const f2 = v => v > 0 && v < 1 ? v.toLocaleString('de-DE', { maximumFractionDigits: 2 }) : f(v); // kleine Werte nicht als „0" zeigen
+  const chev = '<svg class="chev" viewBox="0 0 16 16" aria-hidden="true"><path d="M4 6l4 4 4-4"/></svg>';
+  const sec = (id, title, count, body, hint) => { const op = !bizSecClosed.has(id);
+    return '<section class="bsec' + (op ? ' open' : '') + '"><button class="bsech" data-bsec="' + id + '" aria-expanded="' + op + '"><span>' + title + (count != null ? ' <small>' + count + '</small>' : '') + '</span>' + (hint || '') + chev + '</button>' + (op ? '<div class="bsecb">' + body + '</div>' : '') + '</section>'; };
+  // Überblick
+  let h = '<div class="biztop"><div><small>Einkommen</small><b>' + f(inc) + ' €/s</b></div><div><small>Muskel-Turbo</small><b>×' + MK.fmt1(xm) + ' XP</b></div><div><small>Level-Bonus</small><b>+' + Math.round(MK.totalLv() * (1 + (MK.bonus().lvInc || 0) * 100)) + ' %</b></div></div>'
+    + (() => { const M = MK.MILES[S.mile]; if (!M) return ''; const prev = S.mile ? MK.MILES[S.mile - 1][0] : 0, k = Math.max(0, Math.min(1, Math.log10(Math.max(1, S.stats.earned) / Math.max(1, prev)) / Math.log10(M[0] / Math.max(1, prev))));
+      return '<div class="mile"><span>Nächster Meilenstein: <b>' + MK.fmt(M[0]) + ' €</b> verdient → <b>+' + (M[1] * 20) + ' Ruhm</b></span><i style="width:' + Math.round(k * 100) + '%"></i></div>'; })();
+  // Deine Geschäfte
+  const own = MK.BIZ.filter(B => MK.bizOpen(B));
+  let gb = '<div class="buyn"><span>Menge pro Kauf</span><span class="seg">' + [1, 10, 100, 'max'].map(n => '<button class="opt" data-bizn="' + n + '" aria-pressed="' + (bizN === n) + '">' + (n === 'max' ? 'Max' : '×' + n) + '</button>').join('') + '</span></div>';
+  let ready = 0;
+  own.forEach(B => { const o = MK.bizCount(B.id);
     const n = bizN === 'max' ? Math.max(1, MK.bizMaxN(B)) : bizN, c = MK.bizCost(B, n), each = B.inc * MK.bizMul(B.id) * MK.incMul(), isOpen = bizOpenSet.has(B.id);
     const ups = MK.bizUps().filter(u => u.kind === 'biz' && u.B.id === B.id), nextUp = ups[0], P2 = MK.PERKS[B.id], pl = MK.perkLv(B.id);
-    const badge = (nextUp && nextUp.ok ? 1 : 0) + (o >= MK.perkNeed(B.id) ? 1 : 0);
-    h += `<div class="card biz ${isOpen ? 'open' : ''}"><div class="row bizhead" data-bopen="${B.id}"><div><h4><span class="bico">${B.icon}</span> ${B.name} <small class="own">${o}</small>${badge ? '<span class="bdot"></span>' : ''}</h4>
-      <p class="pw">je ${f(each)} €/s${o ? ` · zusammen ${f(MK.bizRate(B))} €/s` : ''}${MK.bizMul(B.id) > 1 ? ` · ×${MK.bizMul(B.id)}` : ''}${pl ? ` · Vorteil Stufe ${pl}` : ''}</p></div>
-      <span class="bbtns col"><button class="btn" data-biz="${B.id}" data-pr="${c}">${bizN === 'max' ? `Max (${n})` : n > 1 ? '×' + n : 'Kaufen'}<br><small>${MK.fmt(c)} €</small></button>${(() => { const mx = bizN === 'max', dn = mx ? MK.bizDiaMaxN(B) : bizN, dc = MK.bizDiaCost(B, Math.max(1, dn)); return `<button class="btn dia sm" data-bizd="${B.id}" data-pr="${dc}" data-cur="dia">${mx ? `Max (${dn}) · ` : dn > 1 ? '×' + dn + ' · ' : ''}${MK.fmt(dc)} 💎</button>`; })()}<label class="autob" title="Auto-Kauf"><span class="sw2 mini"><input type="checkbox" data-autob="${B.id}" ${(S.staff || []).includes('klaus') && (S.autoBiz || {})[B.id] ? 'checked' : ''}><span></span></span><small>Auto</small></label></span></div>`;
+    const badge = (nextUp && nextUp.ok ? 1 : 0) + (o >= MK.perkNeed(B.id) ? 1 : 0); if (badge) ready++;
+    const prevNeed = nextUp ? (MK.BIZ_STEPS.filter(st => st[0] < nextUp.need).pop() || [0])[0] : 0, pk = nextUp ? Math.max(0, Math.min(1, (o - prevNeed) / Math.max(1, nextUp.need - prevNeed))) : 1;
+    const nxt = nextUp ? (nextUp.ok ? '<span class="bnx ok">Ausbau ×2 bereit</span>' : '<span class="bnx">Ausbau ×2 bei ' + nextUp.need + ' Stück</span>') : '<span class="bnx">Alle Ausbauten fertig</span>';
+    gb += '<div class="card biz' + (isOpen ? ' open' : '') + '"><div class="row bizhead" data-bopen="' + B.id + '"><span class="bicon" aria-hidden="true">' + B.icon + '</span><div class="binfo"><h4>' + B.name + ' <small class="own">' + o + '×</small></h4>'
+      + '<p class="pw"><b>' + f2(MK.bizRate(B)) + ' €/s</b> zusammen · je ' + f2(each) + ' €/s' + (MK.bizMul(B.id) > 1 ? ' · ×' + MK.bizMul(B.id) : '') + '</p>'
+      + '<div class="bprog"><i style="width:' + Math.round(pk * 100) + '%"></i></div>' + nxt + '</div>'
+      + '<button class="btn bbuy" data-biz="' + B.id + '" data-pr="' + c + '">' + (bizN === 'max' ? 'Max (' + n + ')' : n > 1 ? '×' + n : 'Kaufen') + '<small>' + MK.fmt(c) + ' €</small></button></div>'
+      + '<div class="bmore" data-bopen="' + B.id + '" role="button" tabindex="0" aria-expanded="' + isOpen + '"><span>' + (isOpen ? 'Weniger anzeigen' : 'Ausbau, Vorteil, Diamanten, Auto-Kauf') + '</span>' + (badge ? '<span class="bready">' + badge + ' bereit</span>' : '') + chev + '</div>';
     if (isOpen) {
-      h += `<div class="bizbody">`;
-      if (nextUp) { const uc = Math.ceil(nextUp.cost * MK.shopMul() * MK.upDisc()); h += `<div class="bline"><div><b>Ausbau: ${MK.BIZ_UP_NAMES[MK.BIZ_STEPS.findIndex(st => st[0] === nextUp.need)]}</b><small>×2 Einkommen · ab ${nextUp.need} Stück</small></div>${nextUp.ok ? `<span class="bbtns"><button class="btn" data-bup="${nextUp.id}" data-pr="${uc}">${MK.fmt(uc)} €</button><button class="btn dia" data-bupd="${nextUp.id}" data-pr="${MK.diaPrice(nextUp.cost)}" data-cur="dia">${MK.diaPrice(nextUp.cost)} 💎</button></span>` : '<span class="tag soon">Bald</span>'}</div>`; }
+      gb += '<div class="bizbody">';
+      if (nextUp) { const uc = Math.ceil(nextUp.cost * MK.shopMul() * MK.upDisc()); gb += '<div class="bline"><div><b>Ausbau: ' + MK.BIZ_UP_NAMES[MK.BIZ_STEPS.findIndex(st => st[0] === nextUp.need)] + '</b><small>×2 Einkommen · ab ' + nextUp.need + ' Stück</small></div>' + (nextUp.ok ? '<span class="bbtns"><button class="btn" data-bup="' + nextUp.id + '" data-pr="' + uc + '">' + MK.fmt(uc) + ' €</button><button class="btn dia" data-bupd="' + nextUp.id + '" data-pr="' + MK.diaPrice(nextUp.cost) + '" data-cur="dia">' + MK.diaPrice(nextUp.cost) + ' 💎</button></span>' : '<span class="tag soon">noch ' + Math.max(0, nextUp.need - o) + ' Stück</span>') + '</div>'; }
       const pc = MK.perkCost(B.id), pok = o >= MK.perkNeed(B.id);
-      h += `<div class="bline perk"><div><b>💪 ${P2.name} <small>Stufe ${pl}</small></b><small>${P2.txt} je Stufe · ab ${MK.perkNeed(B.id)} Stück</small></div>${pok ? `<span class="bbtns"><button class="btn" data-perk="${B.id}" data-pr="${pc}">${MK.fmt(pc)} €</button><button class="btn dia" data-perkd="${B.id}" data-pr="${MK.diaPrice(pc)}" data-cur="dia">${MK.diaPrice(pc)} 💎</button></span>` : '<span class="tag soon">Bald</span>'}</div></div>`;
+      gb += '<div class="bline perk"><div><b>💪 ' + P2.name + ' <small>Stufe ' + pl + '</small></b><small>' + P2.txt + ' je Stufe · ab ' + MK.perkNeed(B.id) + ' Stück</small></div>' + (pok ? '<span class="bbtns"><button class="btn" data-perk="' + B.id + '" data-pr="' + pc + '">' + MK.fmt(pc) + ' €</button><button class="btn dia" data-perkd="' + B.id + '" data-pr="' + MK.diaPrice(pc) + '" data-cur="dia">' + MK.diaPrice(pc) + ' 💎</button></span>' : '<span class="tag soon">noch ' + Math.max(0, MK.perkNeed(B.id) - o) + ' Stück</span>') + '</div>';
+      { const mx = bizN === 'max', dn = mx ? MK.bizDiaMaxN(B) : bizN, dc = MK.bizDiaCost(B, Math.max(1, dn));
+        gb += '<div class="bline"><div><b>Mit Diamanten kaufen</b><small>' + (mx ? 'Max (' + dn + ')' : '×' + Math.max(1, dn)) + ' Stück sofort</small></div><button class="btn dia" data-bizd="' + B.id + '" data-pr="' + dc + '" data-cur="dia">' + MK.fmt(dc) + ' 💎</button></div>'; }
+      gb += '<div class="bline"><div><b>Auto-Kauf</b><small>Kauft automatisch nach · braucht Manager Klaus</small></div><label class="autob" title="Auto-Kauf"><span class="sw2"><input type="checkbox" data-autob="' + B.id + '" ' + ((S.staff || []).includes('klaus') && (S.autoBiz || {})[B.id] ? 'checked' : '') + '><span></span></span></label></div>';
+      gb += '</div>';
     }
-    h += '</div>'; });
-  // Upgrades: neue Geschäfte über Turnier-Titel (keine Level-Grenzen)
+    gb += '</div>'; });
+  h += sec('own', 'Deine Geschäfte', own.length, gb, ready ? '<span class="bready">' + ready + ' bereit</span>' : '');
+  // Verbesserungen
+  let vb = '';
+  { const ol = S.offLv || 0, mx = ol >= MK.OFF_MAX, oc = MK.offCost();
+    vb += '<div class="card clickup"><div class="row"><div><h4>🌙 Nachtschicht ' + ib('Was dein Imperium verdient, während das Spiel zu ist. Start 5 %, jede Stufe +1 %, höchstens 15 %.') + '</h4><p class="small">Offline ' + Math.round(MK.offRate() * 100) + ' % · Stufe ' + ol + '/' + MK.OFF_MAX + '</p></div>' + (mx ? '<span class="tag">Max</span>' : '<button class="btn" data-off="1" data-pr="' + oc + '">' + MK.fmt(oc) + ' €</button>') + '</div></div>'; }
+  const cu = MK.CLICK_UPS[S.clickUp];
+  if (cu) { const ok = MK.bizCount(cu.need) >= 1, c = Math.ceil(cu.cost * MK.shopMul());
+    vb += '<div class="card clickup ' + (ok ? '' : 'locked') + '"><div class="row"><div><h4>🖱️ ' + cu.name + '</h4><p class="small">Klick bringt +' + Math.round(cu.pct * 100) + ' % deines €/s' + (ok ? '' : ' · 🔒 ' + MK.BIZ.find(B => B.id === cu.need).name) + '</p></div>' + (ok ? '<span class="bbtns"><button class="btn" data-bup="click:' + S.clickUp + '" data-pr="' + c + '">' + MK.fmt(c) + ' €</button><button class="btn dia" data-bupd="click:' + S.clickUp + '" data-pr="' + MK.diaPrice(cu.cost) + '" data-cur="dia">' + MK.diaPrice(cu.cost) + ' 💎</button></span>' : '<span class="tag soon">Bald</span>') + '</div></div>'; }
+  h += sec('ups', 'Verbesserungen', null, vb);
+  // Neue Geschäfte: über Turnier-Titel (keine Level-Grenzen)
   const lic = MK.BIZ.filter(B => !MK.bizOpen(B));
-  if (lic.length) { h += '<h3 class="sh">Neue Geschäfte ' + ib('Turniere gewinnen → Titel → Lizenz kaufen. Keine Level-Grenzen.') + '</h3>';
+  if (lic.length) { let lb = '<p class="bsecnote">Turnier gewinnen → Titel → Lizenz kaufen.</p>';
     lic.slice(0, 1).forEach(B => { const ok = MK.licOk(B), pr = MK.licPrice(B);
       const reqs = [].concat(B.req || [{ trophy: B.lic }]), money = S.money >= pr;
-      h += `<div class="card biz lic ${ok ? '' : 'locked'}"><div class="row"><div><h4><span class="bico">${B.icon}</span> ${B.name} ${ib(B.desc + ' Je Stück ' + MK.fmt1(B.inc * MK.incMul()) + ' €/s.')}</h4><p class="small"><b>Anforderungen:</b></p>${reqList(reqs, 'lic')}<ul class="skreq lic"><li class="${money ? 'ok' : 'no'}">${money ? '✓' : '✗'} Lizenz ${MK.fmt(pr)} €${money ? '' : ` <small>(du: ${MK.fmt(S.money)} €)</small>`}</li></ul></div>
-        ${ok ? `<button class="btn" data-lic="${B.id}" data-pr="${pr}" data-what="die Lizenz">Lizenz<br><small>${MK.fmt(pr)} €</small></button>` : '<span class="tag soon">🔒</span>'}</div></div>`; }); }
+      lb += '<div class="card biz lic ' + (ok ? '' : 'locked') + '"><div class="row"><div><h4><span class="bico">' + B.icon + '</span> ' + B.name + ' ' + ib(B.desc + ' Je Stück ' + MK.fmt1(B.inc * MK.incMul()) + ' €/s.') + '</h4>' + reqList(reqs, 'lic') + '<ul class="skreq lic"><li class="' + (money ? 'ok' : 'no') + '">' + (money ? '✓' : '✗') + ' Lizenz ' + MK.fmt(pr) + ' €' + (money ? '' : ' <small>(du: ' + MK.fmt(S.money) + ' €)</small>') + '</li></ul></div>'
+        + (ok ? '<button class="btn" data-lic="' + B.id + '" data-pr="' + pr + '" data-what="die Lizenz">Lizenz<br><small>' + MK.fmt(pr) + ' €</small></button>' : '<span class="tag soon">🔒</span>') + '</div></div>'; });
+    h += sec('lic', 'Neue Geschäfte', null, lb); }
+  // Statistik (zu Beginn zugeklappt – nutzt den bisherigen Schalter)
+  h += '<section class="bsec' + (bizStat ? ' open' : '') + '"><button class="bsech" data-bstat="1" aria-expanded="' + bizStat + '"><span>📊 Statistik</span>' + chev + '</button>' + (bizStat ? '<div class="bsecb">' + bizStats() + '</div>' : '') + '</section>';
   P.innerHTML = h;
   P.querySelectorAll('[data-off]').forEach(b => b.onclick = () => { if (MK.buyOff()) { MK.Audio.play('level'); U.toast(`Nachtschicht: offline ${Math.round(MK.offRate() * 100)} %`, 'big'); re(); } });
   P.querySelectorAll('[data-lic]').forEach(b => b.onclick = () => { if (MK.buyLic(b.dataset.lic)) { const B = MK.BIZ.find(x => x.id === b.dataset.lic); MK.Audio.play('level'); U.toast(`Lizenz: ${B.icon} ${B.name} – jetzt kaufen!`, 'big'); bizOpenSet.add(B.id); re(); } });
   const re = () => { const sc = P.scrollTop; paneBiz(P); P.scrollTop = sc; U.liveBuy(); U.quick(); MK.save(); };
   P.querySelectorAll('[data-bizn]').forEach(b => b.onclick = () => { bizN = b.dataset.bizn === 'max' ? 'max' : +b.dataset.bizn; re(); });
   P.querySelectorAll('[data-bstat]').forEach(b => b.onclick = () => { bizStat = !bizStat; MK.Audio.play('pop'); re(); });
+  P.querySelectorAll('[data-bsec]').forEach(b => b.onclick = () => { const id = b.dataset.bsec; bizSecClosed.has(id) ? bizSecClosed.delete(id) : bizSecClosed.add(id); MK.Audio.play('pop'); re(); });
+  P.querySelectorAll('.bmore').forEach(b => b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
   P.querySelectorAll('[data-bopen]').forEach(b => b.onclick = e => { if (e.target.closest('button, label, input')) return; const id = b.dataset.bopen; bizOpenSet.has(id) ? bizOpenSet.delete(id) : bizOpenSet.add(id); MK.Audio.play('pop'); re(); });
   P.querySelectorAll('[data-autob]').forEach(b => b.onchange = () => { const id = b.dataset.autob;
     if (!(S.staff || []).includes('klaus')) { b.checked = true; setTimeout(() => { b.checked = false; }, 380); MK.Audio.play('error'); U.toast('Kaufe Manager Klaus im Shop, um Auto-Kauf freizuschalten', 'big'); return; }
