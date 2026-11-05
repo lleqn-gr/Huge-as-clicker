@@ -55,7 +55,7 @@ MK.merge = function (f, d) {
   out.stats.byG = Object.assign({}, (d.stats && d.stats.byG) || {});
   return out;
 };
-MK.save = function () { const S = MK.S; if (!S) return; S.last = Date.now(); try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } };
+MK.save = function () { const S = MK.S; if (!S) return; S.last = Date.now(); S.moneyBak = S.money; try { localStorage.setItem(KEY, JSON.stringify(S)); } catch (e) { } };
 MK.exportSave = () => { MK.save(); return btoa(unescape(encodeURIComponent(JSON.stringify(MK.S)))); };
 MK.importSave = str => { const d = JSON.parse(decodeURIComponent(escape(atob(str.trim())))); if (!d || !d.m) throw new Error('Kein gültiger Spielstand'); MK.S = MK.merge(MK.fresh(), d); MK.ensureNew(); MK.save(); return true; };
 MK.reset = () => { try { localStorage.removeItem('mk_intro_done'); } catch (e) { } MK.S = MK.fresh(); MK.ensureNew(); MK.save(); }; // Neustart: Einführung läuft wieder
@@ -224,7 +224,7 @@ MK.doRep = function (extra) {
 
 /* ---------- Tick (pro Frame) ---------- */
 MK.tick = function (dt) {
-  if (!isFinite(MK.S.money)) MK.fixMoney();
+  if (!MK.S._mg) MK.fixMoney();
   { const inc = MK.income(); if (inc > 0) MK.earn(inc * dt, true); }
   const S = MK.S;
   if (S.beastCd > 0) S.beastCd = Math.max(0, S.beastCd - dt);
@@ -293,10 +293,16 @@ MK.cashCost = n => MK.nice(40 * Math.pow(2.7, n) * MK.shopMul());
 MK.cashName = n => 'Kassengriff Stufe ' + (n + 1);
 MK.buyCash = function () { const S = MK.S, n = S.cashLv || 0; if (n >= MK.CASH_MAX || !MK.spend(MK.cashCost(n))) return false; S.cashLv = n + 1; MK.emit('cashUp', S.cashLv); return true; };
 MK.clickPct = () => MK.CLICK_UPS.slice(0, MK.S.clickUp).reduce((a, u) => a + u.pct, 0) + (MK.bonus().clickInc || 0);
-MK.fixMoney = () => { const S = MK.S; if (!S) return; const st = S.stats || {}; if (!isFinite(st.spent) || st.spent == null) st.spent = 0; if (!isFinite(st.earned) || st.earned == null) st.earned = 0;
-  if (typeof S.money !== 'number' || !isFinite(S.money) || S.money < 0) S.money = Math.max(0, st.earned - st.spent); }; // kaputter Geldwert (∞) → aus verdient minus ausgegeben neu berechnen
-MK.earn = function (n, passive) { const S = MK.S; if (!isFinite(n)) return; S.money += n; S.stats.earned += n; if (!passive) MK.track('earn', n); };
-MK.spend = function (n) { const S = MK.S; if (!(n >= 0) || !isFinite(n) || !(S.money >= n)) return false; S.money -= n; S.stats.spent += n; if (n > 0) MK.emit('spent', n); return true; };
+/* Geld-Schutz: das Feld „money“ nimmt nur echte Zahlen an. Alles andere (NaN, ∞, Text) wird abgewiesen,
+   der letzte gute Wert bleibt, und die Ursache wird in S.bugLog notiert (für die Fehlersuche per Spielstand-Code). */
+MK.guardMoney = S => { if (!S || S._mg) return; let v = +S.money; if (!isFinite(v) || v < 0) v = isFinite(+S.moneyBak) && +S.moneyBak >= 0 ? +S.moneyBak : Math.max(0, (+(S.stats && S.stats.earned) || 0) - (+(S.stats && S.stats.spent) || 0)); if (!isFinite(v)) v = 0;
+  Object.defineProperty(S, '_mg', { value: 1, enumerable: false });
+  Object.defineProperty(S, 'money', { enumerable: true, configurable: true, get: () => v, set: n => { const x = typeof n === 'number' ? n : +n;
+    if (!isFinite(x)) { try { S.bugLog = (S.bugLog || []).slice(-4); S.bugLog.push({ t: Date.now(), v: String(n), w: (new Error().stack || '').split('\n').slice(2, 6).map(l => l.trim()).join(' | ') }); } catch (e) { } return; }
+    v = Math.max(0, x); } }); };
+MK.fixMoney = () => { const S = MK.S; if (!S) return; const st = S.stats || (S.stats = {}); if (!isFinite(+st.spent)) st.spent = 0; else st.spent = +st.spent; if (!isFinite(+st.earned)) st.earned = 0; else st.earned = +st.earned; MK.guardMoney(S); };
+MK.earn = function (n, passive) { const S = MK.S; n = +n; if (!isFinite(n)) return; S.money += n; S.stats.earned += n; if (!passive) MK.track('earn', n); };
+MK.spend = function (n) { const S = MK.S; n = +n; if (!(n >= 0) || !isFinite(n) || !(S.money >= n)) return false; S.money -= n; S.stats.spent += n; if (n > 0) MK.emit('spent', n); return true; };
 MK.addFame = function (n) { const S = MK.S, v = n * MK.fameMul(); S.fame += v; MK.emit('fame', v); return v; };
 
 /* ---------- Offline-Fortschritt ---------- */
