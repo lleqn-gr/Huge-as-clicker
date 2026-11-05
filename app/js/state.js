@@ -224,6 +224,7 @@ MK.doRep = function (extra) {
 
 /* ---------- Tick (pro Frame) ---------- */
 MK.tick = function (dt) {
+  if (!isFinite(MK.S.money)) MK.fixMoney();
   { const inc = MK.income(); if (inc > 0) MK.earn(inc * dt, true); }
   const S = MK.S;
   if (S.beastCd > 0) S.beastCd = Math.max(0, S.beastCd - dt);
@@ -292,8 +293,10 @@ MK.cashCost = n => MK.nice(40 * Math.pow(2.7, n) * MK.shopMul());
 MK.cashName = n => 'Kassengriff Stufe ' + (n + 1);
 MK.buyCash = function () { const S = MK.S, n = S.cashLv || 0; if (n >= MK.CASH_MAX || !MK.spend(MK.cashCost(n))) return false; S.cashLv = n + 1; MK.emit('cashUp', S.cashLv); return true; };
 MK.clickPct = () => MK.CLICK_UPS.slice(0, MK.S.clickUp).reduce((a, u) => a + u.pct, 0) + (MK.bonus().clickInc || 0);
-MK.earn = function (n, passive) { const S = MK.S; S.money += n; S.stats.earned += n; if (!passive) MK.track('earn', n); };
-MK.spend = function (n) { const S = MK.S; if (S.money < n) return false; S.money -= n; S.stats.spent += n; if (n > 0) MK.emit('spent', n); return true; };
+MK.fixMoney = () => { const S = MK.S; if (!S) return; const st = S.stats || {}; if (!isFinite(st.spent) || st.spent == null) st.spent = 0; if (!isFinite(st.earned) || st.earned == null) st.earned = 0;
+  if (typeof S.money !== 'number' || !isFinite(S.money) || S.money < 0) S.money = Math.max(0, st.earned - st.spent); }; // kaputter Geldwert (∞) → aus verdient minus ausgegeben neu berechnen
+MK.earn = function (n, passive) { const S = MK.S; if (!isFinite(n)) return; S.money += n; S.stats.earned += n; if (!passive) MK.track('earn', n); };
+MK.spend = function (n) { const S = MK.S; if (!(n >= 0) || !isFinite(n) || !(S.money >= n)) return false; S.money -= n; S.stats.spent += n; if (n > 0) MK.emit('spent', n); return true; };
 MK.addFame = function (n) { const S = MK.S, v = n * MK.fameMul(); S.fame += v; MK.emit('fame', v); return v; };
 
 /* ---------- Offline-Fortschritt ---------- */
@@ -492,7 +495,7 @@ MK.trainerGCost = g => { const M = MK.MUSCLES.find(m => m.id === g); return MK.n
 MK.trainerGMul = g => 1 + .15 * MK.trainerGLv(g);
 MK.buyTrainer = function () { const S = MK.S, lv = MK.trainerRate(); if (lv >= MK.TRAINER_MAX || !MK.spend(MK.trainerCost(lv))) return false; S.trainer.lv = lv + 1; MK.dirty(); return true; };
 MK.buyTrainerG = function (g) { const S = MK.S; if (!MK.trainerRate() || !MK.spend(MK.trainerGCost(g))) return false; S.trainer.g[g] = MK.trainerGLv(g) + 1; MK.dirty(); return true; };
-MK.ensureNew = function () {
+MK.ensureNew = function () { MK.fixMoney();
   { const S1 = MK.S; if (!S1.trainer) S1.trainer = { lv: 0, g: {} }; if (!S1.trainer.g) S1.trainer.g = {}; }
   { const S0 = MK.S; if (!S0.diet) S0.diet = 'keep'; if (S0.fatOff == null) S0.fatOff = 0; if (!S0.staff) S0.staff = []; if (S0.diaAcc == null) S0.diaAcc = 0; if (!S0.ecoMig) { S0.ecoMig = 1; } }
   const S = MK.S;

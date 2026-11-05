@@ -1,3 +1,10 @@
+/* Zahlen deutsch schreiben (1.234,5) – auch wenn dem Browser/der App die deutschen Sprachdaten fehlen */
+(function () { try { if ((1234.5).toLocaleString('de-DE') === '1.234,5') return; } catch (e) { }
+  const orig = Number.prototype.toLocaleString;
+  Number.prototype.toLocaleString = function (loc, opt) { if (loc !== 'de-DE' || opt) return orig.call(this, loc, opt);
+    const v = +this; if (!isFinite(v)) return String(v); const neg = v < 0, a = Math.abs(v), r = Math.round(a * 1000) / 1000;
+    let [i, f] = String(r).split('.'); if (/e/.test(i)) return orig.call(this); i = i.replace(/\B(?=(\d{3})+(?!\d))/g, '.');
+    return (neg ? '-' : '') + i + (f ? ',' + f : ''); }; })();
 /* Muskelklicker – Spieldaten. Alles, was man ohne Code-Logik anpassen will, steht hier. */
 window.MK = window.MK || {};
 (function (MK) {
