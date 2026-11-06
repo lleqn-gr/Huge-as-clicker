@@ -40,10 +40,12 @@ function bind() {
     if (U.view && U.view() === 'biz') { empDrag = { y: e.clientY, sy: e.clientY, x, yy: y, moved: false }; return; }
     if (U.tab && U.tab() === 'ward') { Sc.wardSpin(); return; }
     const g = Sc.hitTarget(x, y); if (g) return collect(g);
+    if (!MK.touchUI()) { // PC: Dinge in der Szene direkt anklicken. Handy: dafür gibt es runde Knöpfe am Bühnenrand (sceneBtns)
     const gR = Sc.guRect; if (gR && x >= gR.x && x <= gR.x + gR.w && y >= gR.y && y <= gR.y + gR.h) { return MK.bribeOpen(); } // Hausmeister Günther antippen
     const bR = Sc.boomRect; if (bR && MK.S.eq.boombox && x >= bR.x && x <= bR.x + bR.w && y >= bR.y && y <= bR.y + bR.h) { MK.Audio.play('pop'); return U.openExtra('music'); }
     const tR = Sc.trainerRect; if (tR && MK.trainerRate() && x >= tR.x && x <= tR.x + tR.w && y >= tR.y && y <= tR.y + tR.h) { MK.Audio.play('pop'); return U.openExtra('trainer'); }
     const kR = Sc.kuehlRect; if (kR && MK.S.eq.kuehl && x >= kR.x && x <= kR.x + kR.w && y >= kR.y && y <= kR.y + kR.h) { MK.Audio.play('pop'); return U.openExtra('fridge'); }
+    }
     rep(x, y);
   });
   cv.addEventListener('pointermove', e => { if (!empDrag) return; const d = empDrag.y - e.clientY; if (Math.abs(e.clientY - empDrag.sy) > 8) empDrag.moved = true; if (empDrag.moved) Sc.empireScroll(d); empDrag.y = e.clientY; });
@@ -292,9 +294,29 @@ function loop(now) {
   if (MK.Comp.cur) MK.Comp.tick(dt, t); else if (emp) Sc.drawEmpire(dt, t); else if (wv) Sc.drawWard(dt, t); else Sc.drawGym(dt, t);
   perfGuard(performance.now() - c0, dt);
   MK.Fx.tick(dt);
-  schedulers(dt);
+  schedulers(dt); sceneBtns(dt, emp || wv);
   requestAnimationFrame(loop);
 }
+
+/* ---------- Handy: Gym-Dinge als kleine runde Knöpfe am Bühnenrand ----------
+   Auf Touch-Geräten / schmalen Bildschirmen sind Kühlschrank, Boombox, Trainer und Hausmeister in der Szene NICHT anklickbar
+   (sonst trifft man sie beim Trainieren aus Versehen) – die ganze Bühne ist Trainings-Fläche. Am PC bleibt alles wie gehabt. */
+MK.touchUI = () => innerWidth <= 900 || !!(window.matchMedia && matchMedia('(pointer: coarse)').matches);
+const SB_ICON = { gu: '<path d="M15 2.5l-5 12.5M5.5 15h8l2 6.5H3.5z"/>', music: '<rect x="3" y="7" width="18" height="12" rx="2"/><circle cx="8" cy="13" r="2.6"/><circle cx="16" cy="13" r="2.6"/><path d="M8 7V4h8v3"/>',
+  fridge: '<path d="M7 3h10v18H7zM7 10h10M10 6v2M10 13v3"/>', trainer: '<circle cx="12" cy="5.5" r="2.5"/><path d="M6 21l2-9h8l2 9M8 12l-3-3M16 12l3-3"/>' };
+const SB_NAME = { gu: 'Hausmeister', music: 'Musik', fridge: 'Küche', trainer: 'Trainer' };
+let sbT = 0, sbKey = null;
+function sceneBtns(dt, off) {
+  if ((sbT -= dt) > 0) return; sbT = .3;
+  const el = $('sceneBtns'); if (!el) return;
+  const S = MK.S, on = MK.touchUI() && !off && !MK.Comp.cur;
+  const L = on ? [Sc.guRect && 'gu', S.eq.boombox && Sc.boomRect && 'music', S.eq.kuehl && Sc.kuehlRect && 'fridge', MK.trainerRate() && Sc.trainerRect && 'trainer'].filter(Boolean) : [];
+  const key = L.join(); if (key === sbKey) return; sbKey = key;
+  el.innerHTML = L.map(id => `<button class="sbtn" data-sb="${id}" aria-label="${SB_NAME[id]}" title="${SB_NAME[id]}"><svg viewBox="0 0 24 24" aria-hidden="true">${SB_ICON[id]}</svg></button>`).join('');
+  el.hidden = !L.length;
+}
+document.addEventListener('click', e => { const b = e.target.closest && e.target.closest('[data-sb]'); if (!b) return; MK.Audio.unlock(); const id = b.dataset.sb;
+  if (id === 'gu') return MK.bribeOpen(); MK.Audio.play('pop'); U.openExtra(id); });
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', boot); else boot();
 })(window.MK);
