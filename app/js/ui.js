@@ -108,7 +108,7 @@ U.renderTab = function () {
   if (tr.parentNode === P) $('stage').appendChild(tr); // Trainingsbereich zurück unter die Bühne
   document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
   requestAnimationFrame(U.tabMark);
-  P.classList.toggle('wardmode', tab === 'ward');
+  P.classList.toggle('wardmode', tab === 'ward'); P.classList.toggle('clean', tab === 'shop' || tab === 'biz');
   if (tab === 'train') { P.innerHTML = ''; P.appendChild(tr); }
   else if (locked) MK.paneTeaser(P, lockF);
   else (({ comp: paneComp, biz: paneBiz, shop: paneShop, gym: paneGym, fridge: paneFridge, music: paneMusic, dshop: paneDShop, trainer: paneTrainer, ward: paneWard, daily: paneDaily, troph: paneTroph, opt: paneOpt })[tab] || (MK.EXTRA_PANES || {})[tab] || paneComp)(P);
@@ -138,6 +138,7 @@ const GICON = {
  schulter: "<path d=\"M6 9h36M9 5v8M39 5v8M15 9l2 12M33 9l-2 12\"/><circle cx=\"24\" cy=\"16.5\" r=\"4\"/><path d=\"M16 22c2-1.2 4.6-1.6 8-1.6s6 .4 8 1.6l-2 18H18z\"/>",
  ruecken: "<path d=\"M9 10c5 2.4 10 3.4 15 3.4S34 12.4 39 10c1.8 6.4.6 12-3.6 17L30 39H18l-5.4-12C8.4 22 7.2 16.4 9 10z\"/><path d=\"M24 14v25M14 18c3 4.6 6.6 7 10 7s7-2.4 10-7\"/>",
  bauch: "<path d=\"M15 6h18c1.6 0 3 1.4 3 3v26c0 4-5.4 7-12 7s-12-3-12-7V9c0-1.6 1.4-3 3-3z\"/><path d=\"M24 7v33M13 15.5h22M13 24.5h22M14 33h20\"/>",
+ ausdauer: "<path d=\"M24 40C11 31 6 24 7 16.5 8 10 15 7.5 20 11l4 3.5 4-3.5c5-3.5 12-1 13 5.5 1 7.5-4 14.5-17 23.5z\"/><path d=\"M9 24h8l3-5 4 10 3-5h12\"/>",
  nacken: "<circle cx=\"24\" cy=\"12\" r=\"6.5\"/><path d=\"M19.5 18v4.6c-4 2-9.6 3.4-13.6 5.2C4 28.8 3.4 31.4 4.6 34h38.8c1.2-2.6.6-5.2-1.3-6.2-4-1.8-9.6-3.2-13.6-5.2V18\"/><path d=\"M12 26.6c3.4 0 6.6 1.6 8.4 4M36 26.6c-3.4 0-6.6 1.6-8.4 4\"/>"
 };
 /* Bedingungen als Häkchen-Liste */
@@ -207,41 +208,98 @@ function bizStats() {
 }
 U.view = () => (tab === 'biz' ? 'biz' : 'gym'); U.tab = () => tab;
 U.openBiz = id => { bizOpenSet.add(id); if (tab !== 'biz') go('biz'); const P = $('pane'); paneBiz(P); U.liveBuy(); const el = P.querySelector(`[data-bopen="${id}"]`); if (el) el.scrollIntoView({ behavior: 'smooth', block: 'center' }); MK.Audio.play('pop'); };
+/* ---------- Symbole für Laden & Imperium (gezeichnet, eine Strichstärke) ---------- */
+const IC = {
+  eur: '<circle cx="12" cy="12" r="9"/><path d="M15.5 8.6a4.4 4.4 0 100 6.8M7 11h6.5M7 13.4h6.5"/>',
+  rate: '<path d="M3 17l6-6 4 4 7-7M15 8h5v5"/>',
+  xp: '<path d="M13.5 2.5L5 13.5h6l-1.5 8 8.5-11h-6z"/>',
+  click: '<path d="M8 3.5v13l3.2-3 2.3 5.3 2.2-1-2.3-5.2H18z"/>',
+  moon: '<path d="M20 14.5A8.5 8.5 0 019.5 4a8.5 8.5 0 1010.5 10.5z"/>',
+  lock: '<rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V8a4 4 0 018 0v3"/>',
+  dia: '<path d="M6.5 4h11l3.5 5-9 11L3 9zM3 9h18M9.5 4L12 20M14.5 4L12 20"/>',
+  star: '<path d="M12 3.5l2.6 5.3 5.8.8-4.2 4.1 1 5.8L12 16.8l-5.2 2.7 1-5.8L3.6 9.6l5.8-.8z"/>',
+  gift: '<rect x="3.5" y="8" width="17" height="4.5" rx="1"/><path d="M5 12.5V21h14v-8.5M12 8v13M12 8C10 4 6.5 4.2 6.5 6.3S12 8 12 8zm0 0c2-4 5.5-3.8 5.5-1.7S12 8 12 8z"/>',
+  up: '<path d="M12 19V6M6 11.5L12 5.5l6 6"/>',
+  perk: '<path d="M12 2.5l2 5.5 5.5 2-5.5 2-2 5.5-2-5.5-5.5-2 5.5-2zM19 15.5l.9 2.6 2.6.9-2.6.9-.9 2.6-.9-2.6-2.6-.9 2.6-.9z"/>',
+  chart: '<path d="M4 20V11M10 20V5M16 20v-6M21 20H3"/>',
+  auto: '<path d="M17 3l3 3-3 3M4 11V9.5A3.5 3.5 0 017.5 6H20M7 21l-3-3 3-3M20 13v1.5a3.5 3.5 0 01-3.5 3.5H4"/>',
+  rep: '<path d="M4.5 12A7.5 7.5 0 0118 7M19.5 12A7.5 7.5 0 016 17M18 3v4h-4M6 21v-4h4"/>',
+  people: '<circle cx="9" cy="7.5" r="3"/><path d="M3.5 20c0-3.6 2.5-6 5.5-6s5.5 2.4 5.5 6"/><circle cx="17" cy="8.5" r="2.4"/><path d="M16.5 14c2.6.2 4.5 2.3 4.5 5.5"/>',
+  board: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4M8.5 10h7M8.5 13.5h7M8.5 17h4"/>',
+  dumb: '<path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
+  plate: '<circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="2.6"/><path d="M12 3v3M12 18v3"/>',
+  cash: '<rect x="2.5" y="6" width="19" height="12" rx="2"/><circle cx="12" cy="12" r="3"/><path d="M6 9.5v5M18 9.5v5"/>',
+  trophy: '<path d="M7 4h10v5a5 5 0 01-10 0zM7 6H4c0 3 1.5 5 3.5 5M17 6h3c0 3-1.5 5-3.5 5M12 14v3.5M8.5 21h7M9.5 17.5h5"/>',
+  gear: '<circle cx="12" cy="12" r="3"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.3 5.3l2.1 2.1M16.6 16.6l2.1 2.1M5.3 18.7l2.1-2.1M16.6 7.4l2.1-2.1"/>',
+  // Geschäfte
+  pfand: '<path d="M10 2.5h4v3l1.5 2.3V20.5a1 1 0 01-1 1h-5a1 1 0 01-1-1V7.8L10 5.5z"/><path d="M8.5 11.5h7M8.5 16h7"/>',
+  shake: '<path d="M6 8h12l-1.6 13H7.6zM5 8h14M12 8l1.8-5.5H17"/>',
+  pt: '<rect x="5" y="4" width="14" height="17" rx="2"/><path d="M9 4V2.5h6V4M8.5 10h7M8.5 13.5h7M8.5 17h4"/>',
+  merch: '<path d="M8.5 3L3 6l2 4.2 2-1V21h10V9.2l2 1L21 6l-5.5-3c-.6 1.6-2 2.6-3.5 2.6S9.1 4.6 8.5 3z"/>',
+  coach: '<rect x="4" y="5" width="16" height="11" rx="1.5"/><path d="M2 19.5h20M10 9.5l4 1.5-4 1.5z"/>',
+  supp: '<path d="M10.5 3.8a5 5 0 017.1 7.1l-6.7 6.7a5 5 0 01-7.1-7.1z"/><path d="M7.2 7.2l7.1 7.1"/>',
+  kette: '<path d="M6.5 7v10M17.5 7v10M3.5 9.5v5M20.5 9.5v5M6.5 12h11"/>',
+  app: '<rect x="7" y="2.5" width="10" height="19" rx="2"/><path d="M11 18.5h2M9.5 8.5l2 2 3-3.5"/>',
+  tv: '<rect x="3" y="6.5" width="18" height="12" rx="2"/><path d="M8 2.5l4 4 4-4M8.5 21.5h7"/>',
+  konzern: '<path d="M4 21V6.5l7-3V21M11 21V9l9 3v9M2 21h20M7 9.5v.01M7 13v.01M7 16.5v.01M15 14.5v.01M15 18v.01"/>',
+  space: '<path d="M12 2.5c3 2.2 4.8 6 4.8 9.8L15 16H9l-1.8-3.7c0-3.8 1.8-7.6 4.8-9.8z"/><circle cx="12" cy="9.5" r="1.9"/><path d="M9 16l-3 4.5h3.5M15 16l3 4.5h-3.5M12 18v3"/>'
+};
+const BIZ_HUE = { pfand: '#2f9e6b', shake: '#e0607e', pt: '#3a7bd5', merch: '#8a5cf6', coach: '#0e9aa7', supp: '#e07b24', kette: '#d0402c', app: '#3a86ff', tv: '#6b5bd6', konzern: '#475569', space: '#1f2a44' };
+const ico = (k, cls) => `<svg class="${cls || 'ic'}" viewBox="0 0 24 24" aria-hidden="true">${IC[k] || IC.gear}</svg>`;
+// Effekt-Chip: Symbol + kurzer Wert, Farbe nach Art (Geld, XP, Diamanten, Ruhm, neutral)
+const chip = (k, txt, kind) => `<span class="fx fx-${kind || 'n'}">${ico(k, 'fxi')}${txt}</span>`;
+const secH = (title, sub, info) => `<div class="sec"><h3>${title}${info ? ' ' + ib(info) : ''}</h3>${sub ? `<p>${sub}</p>` : ''}</div>`;
+const tile = (k, col) => `<span class="tile" style="--t:${col || '#5c564a'}">${ico(k, 'ti2')}</span>`;
 function paneBiz(P) {
-  const S = MK.S, inc = MK.income(), cp = MK.clickPct(), xm = MK.bonus().xpMul || 1, f = v => v < 10 ? MK.fmt1(v) : MK.fmt(v);
-  let h = `<div class="biztop"><div><small>Einkommen</small><b>${f(inc)} €/s</b></div><div><small>Muskel-Turbo</small><b>×${MK.fmt1(xm)} XP</b></div><div><small>Level-Bonus</small><b>+${Math.round(MK.totalLv() * (1 + (MK.bonus().lvInc || 0) * 100))} %</b></div></div>
+  const S = MK.S, inc = MK.income(), xm = MK.bonus().xpMul || 1, f = v => v < 10 ? MK.fmt1(v) : MK.fmt(v);
+  const lvB = Math.round(MK.totalLv() * (1 + (MK.bonus().lvInc || 0) * 100));
+  let h = `<div class="kpis"><div class="kpi"><span class="kl">${ico('rate')}Einkommen</span><b>${f(inc)} €/s</b></div><div class="kpi"><span class="kl">${ico('xp')}Muskel-Turbo</span><b>×${MK.fmt1(xm)} XP</b></div><div class="kpi"><span class="kl">${ico('star')}Level-Bonus</span><b>+${MK.fmt(lvB)} %</b></div></div>
     ${(() => { const M = MK.MILES[S.mile]; if (!M) return ''; const prev = S.mile ? MK.MILES[S.mile - 1][0] : 0, k = Math.max(0, Math.min(1, Math.log10(Math.max(1, S.stats.earned) / Math.max(1, prev)) / Math.log10(M[0] / Math.max(1, prev))));
-      return `<div class="mile"><span>Meilenstein: <b>${MK.fmt(M[0])} €</b> verdient → +${M[1] * 20} Ruhm</span><i style="width:${Math.round(k * 100)}%"></i></div>`; })()}
-    <div class="buyn">Kaufen: ${[1, 10, 100, 'max'].map(n => `<button class="opt" data-bizn="${n}" aria-pressed="${bizN === n}">${n === 'max' ? 'Max' : '×' + n}</button>`).join('')}<button class="opt stbtn" data-bstat="1" aria-pressed="${bizStat}">📊 Statistik</button></div>
+      return `<div class="mile2"><span>${ico('trophy')}<span>Meilenstein: <b>${MK.fmt(M[0])} €</b> verdient</span></span>${chip('star', '+' + M[1] * 20 + ' Ruhm', 'g')}<i style="--k:${Math.round(k * 100)}%"></i></div>`; })()}
+    <div class="buyn2"><div class="seg" role="group" aria-label="Kaufmenge">${[1, 10, 100, 'max'].map(n => `<button data-bizn="${n}" aria-pressed="${bizN === n}">${n === 'max' ? 'Max' : '×' + n}</button>`).join('')}</div><button class="opt2" data-bstat="1" aria-pressed="${bizStat}">${ico('chart')}Statistik</button></div>
     ${bizStat ? bizStats() : ''}`;
-  { const ol = S.offLv || 0, mx = ol >= MK.OFF_MAX, oc = MK.offCost();
-    h += `<div class="card clickup"><div class="row"><div><h4>🌙 Nachtschicht ${ib('Was dein Imperium verdient, während das Spiel zu ist. Start 5 %, jede Stufe +1 %, höchstens 15 %.')}</h4><p class="small">Offline ${Math.round(MK.offRate() * 100)} % · Stufe ${ol}/${MK.OFF_MAX}</p></div>${mx ? '<span class="tag">Max</span>' : `<button class="btn" data-off="1" data-pr="${oc}">${MK.fmt(oc)} €</button>`}</div></div>`; }
-  const cu = MK.CLICK_UPS[S.clickUp];
-  if (cu) { const ok = MK.bizCount(cu.need) >= 1, c = Math.ceil(cu.cost * MK.shopMul());
-    h += `<div class="card clickup ${ok ? '' : 'locked'}"><div class="row"><div><h4>🖱️ ${cu.name}</h4><p>Klick bringt +${Math.round(cu.pct * 100)} % deines €/s${ok ? '' : ' · 🔒 ' + MK.BIZ.find(B => B.id === cu.need).name}</p></div>${ok ? `<span class="bbtns"><button class="btn" data-bup="click:${S.clickUp}" data-pr="${c}">${MK.fmt(c)} €</button><button class="btn dia" data-bupd="click:${S.clickUp}" data-pr="${MK.diaPrice(cu.cost)}" data-cur="dia">${MK.diaPrice(cu.cost)} 💎</button></span>` : '<span class="tag soon">Bald</span>'}</div></div>`; }
-  MK.BIZ.forEach((B, i) => { const open = MK.bizOpen(B), o = MK.bizCount(B.id);
+  // Geschäfte
+  h += secH('Geschäfte', 'Bringen Geld pro Sekunde – auch wenn du nicht klickst.');
+  MK.BIZ.forEach(B => { const open = MK.bizOpen(B), o = MK.bizCount(B.id);
     if (!open) return;
     const n = bizN === 'max' ? Math.max(1, MK.bizMaxN(B)) : bizN, c = MK.bizCost(B, n), each = B.inc * MK.bizMul(B.id) * MK.incMul(), isOpen = bizOpenSet.has(B.id);
-    const ups = MK.bizUps().filter(u => u.kind === 'biz' && u.B.id === B.id), nextUp = ups[0], P2 = MK.PERKS[B.id], pl = MK.perkLv(B.id);
-    const badge = (nextUp && nextUp.ok ? 1 : 0) + (o >= MK.perkNeed(B.id) ? 1 : 0);
-    h += `<div class="card biz ${isOpen ? 'open' : ''}"><div class="row bizhead" data-bopen="${B.id}"><div><h4><span class="bico">${B.icon}</span> ${B.name} <small class="own">${o}</small>${badge ? '<span class="bdot"></span>' : ''}</h4>
-      <p class="pw">je ${f(each)} €/s${o ? ` · zusammen ${f(MK.bizRate(B))} €/s` : ''}${MK.bizMul(B.id) > 1 ? ` · ×${MK.bizMul(B.id)}` : ''}${pl ? ` · Vorteil Stufe ${pl}` : ''}</p></div>
-      <span class="bbtns col"><button class="btn" data-biz="${B.id}" data-pr="${c}">${bizN === 'max' ? `Max (${n})` : n > 1 ? '×' + n : 'Kaufen'}<br><small>${MK.fmt(c)} €</small></button>${(() => { const mx = bizN === 'max', dn = mx ? MK.bizDiaMaxN(B) : bizN, dc = MK.bizDiaCost(B, Math.max(1, dn)); return `<button class="btn dia sm" data-bizd="${B.id}" data-pr="${dc}" data-cur="dia">${mx ? `Max (${dn}) · ` : dn > 1 ? '×' + dn + ' · ' : ''}${MK.fmt(dc)} 💎</button>`; })()}<label class="autob" title="Auto-Kauf"><span class="sw2 mini"><input type="checkbox" data-autob="${B.id}" ${(S.staff || []).includes('klaus') && (S.autoBiz || {})[B.id] ? 'checked' : ''}><span></span></span><small>Auto</small></label></span></div>`;
+    const ups = MK.bizUps().filter(u => u.kind === 'biz' && u.B.id === B.id), nextUp = ups[0], P2 = MK.PERKS[B.id], pl = MK.perkLv(B.id), pn = MK.perkNeed(B.id);
+    const badge = (nextUp && nextUp.ok ? 1 : 0) + (o >= pn ? 1 : 0), auto = (S.staff || []).includes('klaus') && (S.autoBiz || {})[B.id];
+    const mx = bizN === 'max', dn = mx ? MK.bizDiaMaxN(B) : bizN, dc = MK.bizDiaCost(B, Math.max(1, dn));
+    h += `<div class="card biz2 ${isOpen ? 'open' : ''}"><div class="bz-h" data-bopen="${B.id}" role="button" tabindex="0" aria-expanded="${isOpen}">
+      ${tile(B.id, BIZ_HUE[B.id])}<div class="bz-m"><h4>${B.name}<span class="cnt" title="Anzahl">${MK.fmt(o)}</span>${badge ? '<span class="bdot2" title="Ausbau oder Vorteil verfügbar"></span>' : ''}</h4>
+        <div class="fxs">${chip('rate', `+${f(each)} €/s je Stück`, 'm')}${o ? `<span class="sum">= ${f(MK.bizRate(B))} €/s</span>` : ''}${MK.bizMul(B.id) > 1 ? chip('up', '×' + MK.fmt(MK.bizMul(B.id)), 'm') : ''}${pl ? chip('perk', 'Vorteil ' + pl, 'x') : ''}</div></div>
+      <svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M8 10l4 4 4-4"/></svg></div>
+      <div class="bz-a"><button class="btn" data-biz="${B.id}" data-pr="${c}">${mx ? `Max ${n}` : n > 1 ? '×' + n : 'Kaufen'} · ${MK.fmt(c)} €</button><button class="btn dia sm" data-bizd="${B.id}" data-pr="${dc}" data-cur="dia" aria-label="Mit Diamanten kaufen">${mx ? `${dn} · ` : dn > 1 ? '×' + dn + ' · ' : ''}${MK.fmt(dc)} ${ico('dia', 'bi')}</button>
+        <label class="autob2" title="Auto-Kauf (braucht Manager Klaus)"><span class="sw2 mini"><input type="checkbox" data-autob="${B.id}" ${auto ? 'checked' : ''}><span></span></span>${ico('auto')}Auto</label></div>`;
     if (isOpen) {
-      h += `<div class="bizbody">`;
-      if (nextUp) { const uc = Math.ceil(nextUp.cost * MK.shopMul() * MK.upDisc()); h += `<div class="bline"><div><b>Ausbau: ${MK.BIZ_UP_NAMES[MK.BIZ_STEPS.findIndex(st => st[0] === nextUp.need)]}</b><small>×2 Einkommen · ab ${nextUp.need} Stück</small></div>${nextUp.ok ? `<span class="bbtns"><button class="btn" data-bup="${nextUp.id}" data-pr="${uc}">${MK.fmt(uc)} €</button><button class="btn dia" data-bupd="${nextUp.id}" data-pr="${MK.diaPrice(nextUp.cost)}" data-cur="dia">${MK.diaPrice(nextUp.cost)} 💎</button></span>` : '<span class="tag soon">Bald</span>'}</div>`; }
-      const pc = MK.perkCost(B.id), pok = o >= MK.perkNeed(B.id);
-      h += `<div class="bline perk"><div><b>💪 ${P2.name} <small>Stufe ${pl}</small></b><small>${P2.txt} je Stufe · ab ${MK.perkNeed(B.id)} Stück</small></div>${pok ? `<span class="bbtns"><button class="btn" data-perk="${B.id}" data-pr="${pc}">${MK.fmt(pc)} €</button><button class="btn dia" data-perkd="${B.id}" data-pr="${MK.diaPrice(pc)}" data-cur="dia">${MK.diaPrice(pc)} 💎</button></span>` : '<span class="tag soon">Bald</span>'}</div></div>`;
+      h += `<div class="bz-b">`;
+      if (nextUp) { const uc = Math.ceil(nextUp.cost * MK.shopMul() * MK.upDisc()), k = Math.min(1, o / nextUp.need);
+        h += `<div class="bl"><span class="bl-i">${ico('up')}</span><div class="bl-m"><b>${MK.BIZ_UP_NAMES[MK.BIZ_STEPS.findIndex(st => st[0] === nextUp.need)]}</b><div class="fxs">${chip('rate', '×2 €/s', 'm')}${nextUp.ok ? '' : `<span class="need">${MK.fmt(o)}/${nextUp.need} Stück<i style="--k:${Math.round(k * 100)}%"></i></span>`}</div></div>
+          ${nextUp.ok ? `<span class="bl-a"><button class="btn" data-bup="${nextUp.id}" data-pr="${uc}">${MK.fmt(uc)} €</button><button class="btn dia sm" data-bupd="${nextUp.id}" data-pr="${MK.diaPrice(nextUp.cost)}" data-cur="dia" aria-label="Mit Diamanten">${MK.diaPrice(nextUp.cost)} ${ico('dia', 'bi')}</button></span>` : `<span class="lockt">${ico('lock')}</span>`}</div>`; }
+      const pc = MK.perkCost(B.id), pok = o >= pn;
+      h += `<div class="bl"><span class="bl-i x">${ico('perk')}</span><div class="bl-m"><b>${P2.name} <small>Stufe ${pl}</small></b><div class="fxs">${chip('xp', P2.txt, 'x')}${pok ? '' : `<span class="need">${MK.fmt(o)}/${pn} Stück<i style="--k:${Math.round(Math.min(1, o / pn) * 100)}%"></i></span>`}</div></div>
+        ${pok ? `<span class="bl-a"><button class="btn" data-perk="${B.id}" data-pr="${pc}">${MK.fmt(pc)} €</button><button class="btn dia sm" data-perkd="${B.id}" data-pr="${MK.diaPrice(pc)}" data-cur="dia" aria-label="Mit Diamanten">${MK.diaPrice(pc)} ${ico('dia', 'bi')}</button></span>` : `<span class="lockt">${ico('lock')}</span>`}</div></div>`;
     }
     h += '</div>'; });
-  // Upgrades: neue Geschäfte über Turnier-Titel (keine Level-Grenzen)
+  // nächstes Geschäft: Lizenz über Turnier-Titel
   const lic = MK.BIZ.filter(B => !MK.bizOpen(B));
-  if (lic.length) { h += '<h3 class="sh">Neue Geschäfte ' + ib('Turniere gewinnen → Titel → Lizenz kaufen. Keine Level-Grenzen.') + '</h3>';
-    lic.slice(0, 1).forEach(B => { const ok = MK.licOk(B), pr = MK.licPrice(B);
-      const reqs = [].concat(B.req || [{ trophy: B.lic }]), money = S.money >= pr;
-      h += `<div class="card biz lic ${ok ? '' : 'locked'}"><div class="row"><div><h4><span class="bico">${B.icon}</span> ${B.name} ${ib(B.desc + ' Je Stück ' + MK.fmt1(B.inc * MK.incMul()) + ' €/s.')}</h4><p class="small"><b>Anforderungen:</b></p>${reqList(reqs, 'lic')}<ul class="skreq lic"><li class="${money ? 'ok' : 'no'}">${money ? '✓' : '✗'} Lizenz ${MK.fmt(pr)} €${money ? '' : ` <small>(du: ${MK.fmt(S.money)} €)</small>`}</li></ul></div>
-        ${ok ? `<button class="btn" data-lic="${B.id}" data-pr="${pr}" data-what="die Lizenz">Lizenz<br><small>${MK.fmt(pr)} €</small></button>` : '<span class="tag soon">🔒</span>'}</div></div>`; }); }
+  if (lic.length) { const B = lic[0], ok = MK.licOk(B), pr = MK.licPrice(B), reqs = [].concat(B.req || [{ trophy: B.lic }]), money = S.money >= pr;
+    h += secH('Nächstes Geschäft', 'Turnier gewinnen → Titel → Lizenz kaufen.');
+    h += `<div class="card biz2 lic ${ok ? '' : 'locked2'}"><div class="bz-h">${tile(B.id, ok ? BIZ_HUE[B.id] : '#9a9387')}<div class="bz-m"><h4>${B.name}</h4><div class="fxs">${chip('rate', `+${MK.fmt1(B.inc * MK.incMul())} €/s je Stück`, 'm')}</div><p class="desc">${esc(B.desc)}</p></div></div>
+      <div class="reqs">${reqList(reqs, 'lic')}<ul class="skreq lic"><li class="${money ? 'ok' : 'no'}">${money ? '✓' : '✗'} Lizenz ${MK.fmt(pr)} €${money ? '' : ` <small>(du: ${MK.fmt(S.money)} €)</small>`}</li></ul></div>
+      <div class="bz-a">${ok ? `<button class="btn" data-lic="${B.id}" data-pr="${pr}" data-what="die Lizenz">Lizenz kaufen · ${MK.fmt(pr)} €</button>` : `<span class="lockt wide">${ico('lock')}Noch gesperrt</span>`}</div></div>`; }
+  // Boni fürs ganze Imperium
+  h += secH('Boni', 'Gelten für das ganze Imperium.');
+  { const ol = S.offLv || 0, mxo = ol >= MK.OFF_MAX, oc = MK.offCost(), now = Math.round(MK.offRate() * 100);
+    h += `<div class="card row2">${tile('moon', '#4b5ba8')}<div class="r-m"><h4>Nachtschicht <small>${ol}/${MK.OFF_MAX}</small> ${ib('Was dein Imperium verdient, während das Spiel zu ist. Start 5 %, jede Stufe +1 %, höchstens 15 %.')}</h4><div class="fxs">${chip('moon', `Offline ${now} %${mxo ? '' : ' → ' + Math.min(15, now + 1) + ' %'}`, 'm')}</div></div>
+      ${mxo ? '<span class="tag2">Max</span>' : `<button class="btn" data-off="1" data-pr="${oc}">${MK.fmt(oc)} €</button>`}</div>`; }
+  const cu = MK.CLICK_UPS[S.clickUp];
+  if (cu) { const ok = MK.bizCount(cu.need) >= 1, c = Math.ceil(cu.cost * MK.shopMul()), nb = MK.BIZ.find(B => B.id === cu.need);
+    h += `<div class="card row2 ${ok ? '' : 'locked2'}">${tile('click', ok ? '#c2410c' : '#9a9387')}<div class="r-m"><h4>${cu.name}</h4><div class="fxs">${chip('click', `+${Math.round(cu.pct * 100)} % €/s pro Klick`, 'm')}${ok ? '' : `<span class="need">${ico('lock', 'fxi')}braucht ${nb.name}</span>`}</div></div>
+      ${ok ? `<span class="bl-a"><button class="btn" data-bup="click:${S.clickUp}" data-pr="${c}">${MK.fmt(c)} €</button><button class="btn dia sm" data-bupd="click:${S.clickUp}" data-pr="${MK.diaPrice(cu.cost)}" data-cur="dia" aria-label="Mit Diamanten">${MK.diaPrice(cu.cost)} ${ico('dia', 'bi')}</button></span>` : `<span class="lockt">${ico('lock')}</span>`}</div>`; }
   P.innerHTML = h;
+  P.querySelectorAll('[data-bopen]').forEach(b => b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
   P.querySelectorAll('[data-off]').forEach(b => b.onclick = () => { if (MK.buyOff()) { MK.Audio.play('level'); U.toast(`Nachtschicht: offline ${Math.round(MK.offRate() * 100)} %`, 'big'); re(); } });
   P.querySelectorAll('[data-lic]').forEach(b => b.onclick = () => { if (MK.buyLic(b.dataset.lic)) { const B = MK.BIZ.find(x => x.id === b.dataset.lic); MK.Audio.play('level'); U.toast(`Lizenz: ${B.icon} ${B.name} – jetzt kaufen!`, 'big'); bizOpenSet.add(B.id); re(); } });
   const re = () => { const sc = P.scrollTop; paneBiz(P); P.scrollTop = sc; U.liveBuy(); U.quick(); MK.save(); };
@@ -263,48 +321,53 @@ function paneBiz(P) {
 function paneShop(P) {
   const S = MK.S, sm = MK.shopMul();
   let h = '';
+  // Geld pro Klick
   { const n = S.cashLv || 0, mx = n >= MK.CASH_MAX, pr = mx ? 0 : MK.cashCost(n);
-    h += `<h3 class="sh">Kassengriff ${ib('Geld, das jede eigene Wiederholung bringt. Wächst nur mit diesen Upgrades – nicht automatisch. Pump, Beast-Modus und perfekte Wiederholungen vervielfachen es.')}</h3>
-    <div class="card cashc"><div class="cashart" aria-hidden="true"><i></i><i></i><i></i></div><div class="cashinfo"><b>${n ? MK.cashName(n - 1) : 'Kassengriff noch nicht verbessert'}</b>
-      <p><span class="cnow">${MK.fmtS(MK.cashVal(n))} €</span> pro Klick${mx ? '' : ` <span class="cnext">→ ${MK.fmtS(MK.cashVal(n + 1))} €</span>`}</p></div>
-      ${mx ? '<span class="tag">Max</span>' : `<button class="btn ok" data-cashup="1" data-pr="${pr}" data-what="den Kassengriff">Stufe ${n + 1}<br><small>${MK.fmt(pr)} €</small></button>`}</div>`; }
-  h += `<h3 class="sh">Gewichte ${ib('Jede Stufe schwerer = ×1,3 XP pro Wiederholung. Keine Level-Grenze – aber sind die Hilfsmuskeln zu schwach, wird es wackelig (Zerrung).')}</h3><div class="wgrid">`;
+    h += secH('Geld pro Klick', 'Mehr € für jede eigene Wiederholung.', 'Wächst nur mit diesen Stufen – nicht automatisch. Pump, Beast-Modus und perfekte Wiederholungen vervielfachen es.');
+    h += `<div class="card row2">${tile('cash', '#1e8a4f')}<div class="r-m"><h4>${n ? MK.cashName(n - 1) : 'Kassengriff'}${n ? ` <small>Stufe ${n}</small>` : ''}</h4><div class="fxs">${chip('click', `${MK.fmtS(MK.cashVal(n))} €${mx ? '' : ' → ' + MK.fmtS(MK.cashVal(n + 1)) + ' €'} pro Klick`, 'm')}</div></div>
+      ${mx ? '<span class="tag2">Max</span>' : `<button class="btn ok" data-cashup="1" data-pr="${pr}" data-what="den Kassengriff">${MK.fmt(pr)} €</button>`}</div>`; }
+  // Gewichte: je Muskelgruppe eine Kachel
+  h += secH('Gewichte', 'Jede Stufe: ×1,3 XP pro Wiederholung.', 'Keine Level-Grenze – aber sind die Hilfsmuskeln zu schwach, wird es wackelig (Zerrung).') + '<div class="wgrid2">';
   MK.MUSCLES.filter(m => !m.stat).forEach(m => { const st = MK.wgStatus(m.id), cur = st.cur, exs = MK.EXERCISES.filter(e => e.g === m.id && e.kg !== 'cardio'), kinds = [];
     exs.forEach(e => { if (!kinds.some(k => k.kg === e.kg)) kinds.push(e); });
-    const KN = { db: 'Kurzhantel', bb: 'Langhantel', cable: 'Kabel', bw: 'Zusatz' }, one = (e, i) => `${KN[e.kg]} ${MK.wLabel(e, i).replace(' je Hand', '').replace('Körpergewicht', '±0 kg')}`;
-    const lbl = i => kinds.slice(0, 2).map(e => one(e, i)).join(' · ');
-    const tierBar = `<span class="wbar">${Array.from({ length: 19 }, (_, i) => `<i style="${i < cur ? `background:${MK.Scene.plateCol(i + 1)}` : ''}"></i>`).join('')}</span>`;
-    const svg = `<svg class="gico" viewBox="0 0 48 48" aria-hidden="true" style="--c:${m.col}"><circle class="bg" cx="24" cy="24" r="22.5"/><g transform="translate(4.8 4.8) scale(.8)">${GICON[m.id]}</g></svg>${tierBar}`;
-    h += `<div class="card wgc ${st.st === 'buy' ? 'can' : ''}" style="--c:${m.col}"><div class="wgtop"><b>${m.name}</b><span class="wtier">${MK.WG_TIERS[cur]}</span></div>${svg}
-      <p class="wkg"><b>${lbl(cur)}</b></p>
-      ${st.st === 'max' ? '<span class="tag">Max</span>' : st.st === 'buy' ? `<button class="btn ok wide" data-wg="${m.id}" data-pr="${st.price}" data-what="die nächsten Gewichte">Schwerer · ${MK.fmt(st.price)} €</button>` : `<button class="btn wide off" data-pr="${st.price}" data-need="Gewichte ${esc(st.why)}">🔒 ${st.why}</button>`}</div>`; });
+    const one = e => MK.wLabel(e, cur).replace(' je Hand', '').replace('Körpergewicht', '±0 kg'), kg = kinds[0] ? one(kinds[0]) : '';
+    const tierBar = `<span class="wbar2" aria-label="Stufe ${cur} von 19">${Array.from({ length: 19 }, (_, i) => `<i style="${i < cur ? `background:${MK.Scene.plateCol(i + 1)}` : ''}"></i>`).join('')}</span>`;
+    h += `<div class="card wg2 ${st.st === 'buy' ? 'can' : ''}" style="--c:${m.col}"><div class="wg-h"><svg class="gico2" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="23"/><g transform="translate(4.8 4.8) scale(.8)">${GICON[m.id]}</g></svg>
+      <div><b>${m.name}</b><small>${MK.WG_TIERS[cur]} · ${kg}</small></div></div>${tierBar}
+      ${st.st === 'max' ? '<span class="tag2">Max</span>' : st.st === 'buy' ? `<button class="btn ok wide" data-wg="${m.id}" data-pr="${st.price}" data-what="die nächsten Gewichte">Schwerer · ${MK.fmt(st.price)} €</button>` : `<button class="btn wide off" data-pr="${st.price}" data-need="Gewichte ${esc(st.why)}">${ico('lock', 'bi')}${st.why}</button>`}</div>`; });
   h += '</div>';
-  // Trainingspartner: teure Stufen, wird muskulöser, Boost auf alle Muskelgruppen
-  h += '<h3 class="sh">Partner</h3>';
+  // Helfer: Trainer und Kevin
+  h += secH('Helfer', 'Trainieren mit – mehr XP ohne Klicken.');
   { const tl = MK.trainerRate(), tc = MK.trainerCost(tl);
-    h += `<div class="card up"><div class="row"><div><h4>📋 Personal Trainer ${tl ? `<small>Stufe ${tl}</small>` : ''}</h4><p>${tl ? `${tl} Wiederholung${tl > 1 ? 'en' : ''} pro Sekunde automatisch` : 'Trainiert automatisch mit dir'} ${ib('Er sitzt im Gym neben dir und macht automatisch Wiederholungen – immer nur für die Muskelgruppe, die du gerade ausgewählt hast. Antippen im Gym: Trainer-Seite mit Upgrades.')}</p></div>
-      ${tl ? `<button class="btn alt" data-trgo="1">Öffnen</button>` : `<button class="btn ok" data-trbuy="1" data-pr="${tc}">Einstellen ${MK.fmt(tc)} €</button>`}</div></div>`; }
-  if (!MK.partnerOpen()) h += `<div class="card up locked"><h4>Trainingspartner Kevin</h4><p>🔒 Kevin im Klimmzug-Duell schlagen · Level 15</p></div>`;
+    h += `<div class="card row2">${tile('board', '#3a7bd5')}<div class="r-m"><h4>Personal Trainer ${tl ? `<small>Stufe ${tl}</small>` : ''} ${ib('Er sitzt im Gym neben dir und macht automatisch Wiederholungen – immer für die Muskelgruppe, die du gerade ausgewählt hast. Im Gym antippen: Trainer-Seite mit Upgrades.')}</h4>
+      <div class="fxs">${chip('rep', tl ? `${tl} Wdh./s automatisch` : 'Wdh. automatisch', 'x')}</div></div>
+      ${tl ? `<button class="btn alt" data-trgo="1">Öffnen</button>` : `<button class="btn ok" data-trbuy="1" data-pr="${tc}">${MK.fmt(tc)} €</button>`}</div>`; }
+  if (!MK.partnerOpen()) h += `<div class="card row2 locked2">${tile('people', '#9a9387')}<div class="r-m"><h4>Trainingspartner Kevin</h4><div class="fxs"><span class="need">${ico('lock', 'fxi')}Kevin im Klimmzug-Duell schlagen</span></div></div></div>`;
   else { const pl = S.partner.lv, pc = MK.partnerCost(pl), mx = pl >= MK.PARTNER_MAX;
-    h += `<div class="card up"><div class="row"><div><h4>Trainingspartner Kevin ${pl ? `<small>Stufe ${pl}</small>` : ''}</h4><p>×${MK.fmt1(MK.partnerMul())} XP ${ib('Jede Stufe ×1,07 XP auf alles. Ab und zu Duett: +25 % XP. Sichert dich bei Langhantel-Übungen.')}</p></div>
-    ${mx ? '<span class="tag">Max</span>' : `<button class="btn ok" data-partner="1" data-pr="${pc}">${pl ? 'Stufe ' + (pl + 1) : 'Einladen'} ${MK.fmt(pc)} €</button>`}</div></div>`; }
-  // Geräte: alles sofort kaufbar, die Übung dazu geht ab ihrem Muskel-Level
-  h += `<h3 class="sh">Geräte ${ib('Jedes Gerät schaltet eine Übung frei. Kaufen geht immer – trainieren erst ab dem Muskel-Level. Material-Upgrade: +10 % XP je Stufe.')}</h3>`;
-  const eqs = MK.EQUIP.filter(q => !q.disc || MK.discOpen(MK.DISC.find(d => d.id === q.disc))).map(q => { const u = MK.eqUses(q); return { q, st: MK.eqStatus(q), u, lk: !!u.length && !S.eq[q.id] && !u.some(e => MK.groupOpen(e.g)) }; }).sort((a, b) => a.lk - b.lk || (a.st.st === 'owned') - (b.st.st === 'owned') || (a.u[0] ? a.u[0].lv : 0) - (b.u[0] ? b.u[0].lv : 0));
-  eqs.forEach(({ q, st, u, lk }) => { if (lk) { const m = MK.MUSCLES.find(x => x.id === u[0].g); // Muskelgruppe noch zu: Gerät grau, nicht kaufbar
-      h += `<div class="card eq locked"><div class="row"><div><h4>${q.name}</h4><p>${u[0].name} · <span class="noc">🔒 ${m.name} ab Gesamt-Level ${m.unlock}</span></p></div><span class="tag soon">🔒</span></div></div>`; return; }
-    const l = S.eq[q.id] || 0, max = l >= MK.MATERIAL.length, pr = MK.eqPrice(q, l), e = u[0], ready = !e || S.m[e.g].lv >= e.lv;
-    const sub = e ? `${e.name} · <span class="${ready ? 'okc' : 'noc'}">${GN(e.g)} Lv ${e.lv}</span>` : q.desc;
-    h += `<div class="card eq ${l ? '' : 'new'}"><div class="row"><div><h4>${q.name} ${l ? `<small class="mat m${l}">${MK.MATERIAL[l - 1].name}</small>` : ''}</h4><p>${sub}</p></div>
-    ${max ? `<span class="tag">${MK.MATERIAL[MK.MATERIAL.length - 1].name}</span>` : `<button class="btn ${l ? 'alt' : ''}" data-eq="${q.id}" data-pr="${pr}">${l ? '⬆ ' : ''}${MK.fmt(pr)} €</button>`}</div></div>`; });
+    h += `<div class="card row2">${tile('people', '#7c3aed')}<div class="r-m"><h4>Trainingspartner Kevin ${pl ? `<small>Stufe ${pl}</small>` : ''}</h4><div class="fxs">${chip('xp', `×${MK.fmt1(MK.partnerMul())} XP${mx ? '' : ' → ×' + MK.fmt1(MK.partnerMul() * 1.07)}`, 'x')}${chip('people', 'Duett +25 %', 'x')}</div></div>
+    ${mx ? '<span class="tag2">Max</span>' : `<button class="btn ok" data-partner="1" data-pr="${pc}">${pl ? '' : 'Einladen · '}${MK.fmt(pc)} €</button>`}</div>`; }
+  // Geräte: nach Muskelgruppe gruppiert; gesperrte Gruppen als eine Zeile
+  h += secH('Geräte', 'Jedes Gerät schaltet eine Übung frei. Besseres Material: +10 % XP je Stufe.');
+  const eqs = MK.EQUIP.filter(q => !q.disc || MK.discOpen(MK.DISC.find(d => d.id === q.disc))).map(q => ({ q, u: MK.eqUses(q) }));
+  const groups = [['extra', null]].concat(MK.MUSCLES.map(m => [m.id, m]));
+  groups.forEach(([gid, m]) => { const list = eqs.filter(({ u }) => gid === 'extra' ? !u.length : u.length && u[0].g === gid).sort((a, b) => (a.u[0] ? a.u[0].lv : 0) - (b.u[0] ? b.u[0].lv : 0));
+    if (!list.length) return;
+    if (m && !MK.groupOpen(gid) && !list.some(({ q }) => S.eq[q.id])) { h += `<div class="card eqg locked2"><div class="eqg-h"><svg class="gico2 sm" viewBox="0 0 48 48" aria-hidden="true" style="--c:#9a9387"><circle cx="24" cy="24" r="23"/><g transform="translate(4.8 4.8) scale(.8)">${GICON[gid] || ''}</g></svg><b>${m.name}</b><span class="need">${ico('lock', 'fxi')}ab Gesamt-Level ${m.unlock} · ${list.length} Gerät${list.length > 1 ? 'e' : ''}</span></div></div>`; return; }
+    h += `<div class="card eqg"><div class="eqg-h">${m ? `<svg class="gico2 sm" viewBox="0 0 48 48" aria-hidden="true" style="--c:${m.col}"><circle cx="24" cy="24" r="23"/><g transform="translate(4.8 4.8) scale(.8)">${GICON[gid] || ''}</g></svg><b>${m.name}</b>` : `${tile('gear', '#5c564a')}<b>Gym-Extras</b>`}</div>`;
+    list.forEach(({ q, u }) => { const l = S.eq[q.id] || 0, max = l >= MK.MATERIAL.length, pr = MK.eqPrice(q, l), e = u[0], ready = !e || S.m[e.g].lv >= e.lv;
+      const sub = e ? `<span class="ex">${e.name}</span><span class="need ${ready ? 'ok' : ''}">${ready ? '' : ico('lock', 'fxi')}Lv ${e.lv}</span>` : `<span class="ex">${esc(q.desc || '')}</span>`;
+      h += `<div class="eqr ${l ? 'has' : ''}" data-eqrow="${q.id}"><div class="r-m"><h4>${q.name}${l ? ` <span class="mat2 m${l}">${MK.MATERIAL[l - 1].name}</span>` : ''}</h4><div class="fxs">${sub}${l > 1 && e ? chip('xp', `+${(l - 1) * 10} % XP`, 'x') : ''}</div></div>
+        ${max ? `<span class="tag2">${MK.MATERIAL[MK.MATERIAL.length - 1].name}</span>` : `<button class="btn ${l ? 'alt' : ''}" data-eq="${q.id}" data-pr="${pr}" ${l && e ? `aria-label="${MK.MATERIAL[l].name}: +10 % XP für ${MK.fmt(pr)} €"` : ''}>${l ? ico('up', 'bi') + (e ? '+10 % · ' : '') : ''}${MK.fmt(pr)} €</button>`}</div>`; });
+    h += '</div>'; });
   // Sponsoren
-  h += `<h3 class="sh">Sponsoren ${ib('Ein Vertrag gleichzeitig. Bringt langsam Diamanten (auch offline) und einen kleinen XP- und Ruhm-Bonus.')}</h3>`;
-  MK.SPONSORS.forEach(sp => { const ok = MK.sponsorOk(sp), act = S.sponsor === sp.id, inc = sp.inc * (1 + MK.bonus().sponsor), had = (S.sponsored || []).includes(sp.id);
+  h += secH('Sponsoren', 'Ein Vertrag gleichzeitig: Diamanten (auch offline) und kleine Boni.');
+  MK.SPONSORS.forEach(sp => { const ok = MK.sponsorOk(sp), act = S.sponsor === sp.id, had = (S.sponsored || []).includes(sp.id);
     const list = sp.req.map(r => { const m = MK.reqMet(r), hv = MK.reqHave(r); return `<li class="${m ? 'ok' : 'no'}">${m ? '✓' : '✗'} ${MK.reqText(r)}${!m && hv != null ? ` <small>(du: ${hv})</small>` : ''}</li>`; }).join('');
-    h += `<div class="card spon ${act ? 'act' : ''} ${ok || act ? '' : 'locked'}" style="--sc:${sp.col}"><div class="row"><div><h4><span class="logo" style="background:${sp.col}">${sp.logo}</span> ${sp.name}</h4><p class="pitch">${sp.pitch}</p><div class="perks"><span>💎 ${MK.fmt1(sp.dph * (1 + MK.bonus().sponsor))} / Std</span><span>+${Math.round(sp.boost.xp * 100)} % XP</span><span>+${Math.round(sp.boost.fame * 100)} % Ruhm</span>${sp.bonus && !had ? `<span class="gift">🎁 ${MK.rewardText(sp.bonus)}</span>` : ''}</div></div>
-      ${act ? `<button class="btn ok" data-spon="${sp.id}">Aktiv</button>` : `<button class="btn" data-spon="${sp.id}" data-pr="0" ${ok ? '' : `data-need="${esc('Noch nicht erfüllt: ' + sp.req.filter(r => !MK.reqMet(r)).map(MK.reqText).join(', '))}"`}>Unterschreiben</button>`}</div>
-      ${act ? '' : `<ul class="skreq light">${list}</ul>`}</div>`; });
-  h += `<div class="card"><div class="row"><div><h4>💎 Haustiere & Diamanten</h4><p class="small">Jetzt im Shop oben neben deinen Diamanten.</p></div><button class="btn dia" data-goshop="1">Zum Shop</button></div></div>`;
+    h += `<div class="card spon2 ${act ? 'act' : ''} ${ok || act ? '' : 'locked2'}"><div class="r-top"><span class="logo2" style="--sc:${sp.col}">${sp.logo}</span><div class="r-m"><h4>${sp.name}${act ? ' <span class="on2">Aktiv</span>' : ''}</h4>
+      <div class="fxs">${chip('dia', `${MK.fmt1(sp.dph * (1 + MK.bonus().sponsor))}/Std`, 'd')}${chip('xp', `+${Math.round(sp.boost.xp * 100)} % XP`, 'x')}${chip('star', `+${Math.round(sp.boost.fame * 100)} % Ruhm`, 'g')}${sp.bonus && !had ? chip('gift', MK.rewardText(sp.bonus), 'n') : ''}</div></div>
+      ${act ? `<button class="btn xf-ghost" data-spon="${sp.id}">Kündigen</button>` : `<button class="btn" data-spon="${sp.id}" data-pr="0" ${ok ? '' : `data-need="${esc('Noch nicht erfüllt: ' + sp.req.filter(r => !MK.reqMet(r)).map(MK.reqText).join(', '))}"`}>Unterschreiben</button>`}</div>
+      ${act || ok ? '' : `<ul class="skreq light">${list}</ul>`}</div>`; });
+  h += `<div class="card row2">${tile('dia', '#0e7490')}<div class="r-m"><h4>Haustiere & Diamanten</h4><div class="fxs"><span class="ex">Im Shop oben neben deinen Diamanten.</span></div></div><button class="btn dia" data-goshop="1">Zum Shop</button></div>`;
   P.innerHTML = h;
   const buy = (pr, fn, msg) => { if (!MK.spend(pr)) { U.toast(`Dir fehlen noch ${MK.fmt(pr - S.money)} €`); MK.Audio.play('error'); return; } fn(); MK.dirty(); MK.Audio.play('buy'); U.toast(msg); MK.Scene.particle('coin', MK.Scene.W / 2, MK.Scene.H / 2, 8); U.refresh(); U.training(); MK.save(); };
   P.querySelectorAll('[data-cashup]').forEach(b => b.onclick = () => { if (!MK.buyCash()) { U.toast(`Dir fehlen noch ${MK.fmt(MK.cashCost(S.cashLv || 0) - S.money)} €`); MK.Audio.play('error'); return; } MK.Audio.play('buy'); U.toast(`Kassengriff Stufe ${S.cashLv}: jetzt ${MK.fmtS(MK.clickCash())} € pro Klick`); U.refresh(); MK.save(); });
