@@ -15,6 +15,7 @@ import { SHARED } from './parts3d.js';
 import { buildRoom, roomInfo, posterList } from './rooms3d.js';
 import { buildEquip, frameMat } from './equip3d.js';
 import { buildVenue, buildLab } from './venues3d.js';
+import { cityFrame } from './city3d.js';
 
 const MK = window.MK, E = MK.Env3D;
 const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
@@ -129,3 +130,6 @@ E.getLab = L => {
   return render('lab', key, Object.assign({ pScale: L.H * .0034 }, L), C, () => { const B = buildLab(L.kind, C, Object.assign({ yF }, L), wx, wy);
     return { bg: B.g, lights: g => { g.add(new THREE.HemisphereLight('#ffffff', '#8a9aa2', 1.25)); const k = new THREE.DirectionalLight('#ffffff', 1.8); k.position.set(-3, C.h + 6, 4); k.target.position.set(0, 0, -C.zw); k.castShadow = true; k.shadow.mapSize.set(1024, 1024); const sc = k.shadow.camera, e = C.zw; Object.assign(sc, { left: -e, right: e, top: e, bottom: -e, near: 1, far: C.zw * 3 }); sc.updateProjectionMatrix(); g.add(k, k.target); } }; });
 };
+
+/* ---------- Imperium: Mini-Stadt (live) ---------- */
+E.city = L => { if (E.state !== 'ready') return null; CACHE.gym && (CACHE.gym.key = CACHE.gym.key); return cityFrame(R, L); };

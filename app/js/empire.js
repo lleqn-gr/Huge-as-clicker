@@ -325,13 +325,31 @@ function ticker(c, W, y, h, dt) {
   TK.x -= dt * 48; c.save(); c.beginPath(); c.rect(52, y, W - 52, h); c.clip(); c.fillStyle = '#fbf5e6'; c.textAlign = 'left'; c.fillText(TK.txt, TK.x, y + h / 2 + 1); c.restore();
   c.fillStyle = '#ff5a36'; c.fillRect(0, y, 48, h); c.fillStyle = '#fff'; c.textAlign = 'center'; c.fillText('NEWS', 24, y + h / 2 + 1); c.textBaseline = 'alphabetic';
 }
+/* ---------- 3D-Mini-Stadt (Option „Umgebung 3D“): isometrisch, Autos, Lichter, Zoom-Stufen mit Kamerafahrt ----------
+   Höchstens 30 Bilder/s; dazwischen wird das letzte Bild wiederverwendet. Beim Betreten: Kamerafahrt aus dem Gym-Fenster. */
+function city3d(c, x0, y0, W, H, st) {
+  const E3 = MK.Env3D, S = MK.S; if (!E3 || !S.set.env3d || S.set.quality === 'niedrig') return false;
+  if (E3.state === 'idle' && E3.load) { E3.load(); return false; } if (E3.state !== 'ready' || !E3.city) return false;
+  const now = performance.now(), enter = now - (E.last3d || -1e9) > 1200; E.last3d = now;
+  const cv = E.cityCv || (E.cityCv = document.createElement('canvas'));
+  if (enter || now - (E.city3dT || 0) > (S.set.quality === 'hoch' ? 33 : 50) || cv.width === 0) {
+    let r = null; try { r = E3.city({ W, H, st, dpr: c.canvas.width / Sc.W, q: S.set.quality, reduce: S.set.reduce, enter }); } catch (e) { console.error('3D-Stadt:', e); E3.city = null; return false; }
+    if (!r) return false; E.city3dT = now; E.fly = r.fly; if (cv.width !== r.cv.width || cv.height !== r.cv.height) { cv.width = r.cv.width; cv.height = r.cv.height; } const x = cv.getContext('2d'); x.clearRect(0, 0, cv.width, cv.height); x.drawImage(r.cv, 0, 0); }
+  c.drawImage(cv, x0, y0, W, H);
+  // Blick aus dem Gym-Fenster: Fensterrahmen fliegt beim Betreten nach außen weg
+  const f = E.fly || 0; if (f > .02 && !S.set.reduce) { const k = 1 + (1 - f) * 2.6, cx = x0 + W / 2, cy = y0 + H / 2, w = W * .62 * k, h = H * .9 * k, t = Math.max(8, 14 * k);
+    c.save(); c.globalAlpha = Math.min(1, f * 1.6); c.fillStyle = '#5e4a2e'; c.beginPath(); c.rect(x0 - 10, y0 - 10, W + 20, H + 20); c.rect(cx - w / 2, cy - h / 2, w, h); c.fill('evenodd');
+    c.fillRect(cx - t / 4, cy - h / 2, t / 2, h); c.fillRect(cx - w / 2, cy - t / 4, w, t / 2); c.strokeStyle = INK; c.lineWidth = 3; c.strokeRect(cx - w / 2, cy - h / 2, w, h); c.restore(); }
+  return true;
+}
 /* ---------- Oberes Drittel: Mini-Stadt, die herauszoomt ---------- */
 function stageOf() { const types = MK.BIZ.filter(B => MK.bizCount(B.id) > 0).length; return types <= 2 ? 0 : types <= 4 ? 1 : types <= 6 ? 2 : types <= 7 ? 3 : types <= 9 ? 4 : types <= 10 ? 5 : 6; }
 function cityMap(c, x0, y0, W, H, t, st) {
   const own = MK.BIZ.filter(B => MK.bizCount(B.id) > 0), cx = x0 + W / 2, cy = y0 + H / 2;
   c.save(); c.beginPath(); c.rect(x0, y0, W, H); c.clip();
   const zoomAnim = E.stageAnim > 0 ? 1 + E.stageAnim * .8 : 1; // beim Stufen-Sprung: Kamera zieht raus
-  if (st <= 4) { // Stadt (bzw. Land mit Nachbarstädten) von oben: organisch, gecacht; Autos fahren live
+  if (city3d(c, x0, y0, W, H, st)) { /* 3D-Mini-Stadt gezeichnet */ }
+  else if (st <= 4) { // Stadt (bzw. Land mit Nachbarstädten) von oben: organisch, gecacht; Autos fahren live
     const C = cityCache(W, H, st); c.drawImage(C.cv, x0, y0, W, H);
     const sc = C.sc, ox = x0 + W / 2, oy = y0 + H / 2, nCars = Math.min(60, 6 + C.total / 4);
     for (let i = 0; i < nCars; i++) { const rd = CITY.roads[i % CITY.roads.length], L = rd.len, d = ((t * (14 + (i % 5) * 5) + i * 137) % L), p = roadAt(rd, i % 2 ? d : L - d);
