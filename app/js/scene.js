@@ -101,14 +101,34 @@ const EQDRAW = {
     if (st) { c.fillStyle = '#3a3c42'; c.fillRect(x - 18 * k, y - st, 36 * k, 4 * k); c.fillRect(x - 15 * k, y - st, 4 * k, st); c.fillRect(x + 11 * k, y - st, 4 * k, st); }
     const beat = on ? Math.max(0, Math.sin(t * song.bpm / 60 * Math.PI)) : 0, pulse = 1 + beat * .14;
     c.save(); c.translate(x, by); c.scale(1 + beat * .02, 1 - beat * .02);
+    const bl = MK.S.eq.boombox || 1, tier = bl <= 1 ? 0 : bl === 2 ? 1 : bl <= 4 ? 2 : 3; // Aussehen nach Boombox-Stufe: Kassettenrekorder → Boombox → große Boombox → Anlage
+    if (tier === 0) { // kleiner Kassettenrekorder: ein Lautsprecher, Kassettenfenster mit drehenden Spulen, Tasten
+      c.fillStyle = '#4a4a50'; c.strokeStyle = '#111'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(-17 * K, -18 * K, 34 * K, 18 * K, 3 * K); c.fill(); c.stroke();
+      c.strokeStyle = '#2a2a2e'; c.lineWidth = 2 * K; c.beginPath(); c.moveTo(-10 * K, -18 * K); c.lineTo(-8 * K, -23 * K); c.lineTo(8 * K, -23 * K); c.lineTo(10 * K, -18 * K); c.stroke();
+      circ(-8 * K, -9 * K, 6 * K * pulse, '#111'); circ(-8 * K, -9 * K, 3.6 * K * pulse, '#3a3c42');
+      c.fillStyle = '#1b2228'; c.fillRect(1 * K, -14 * K, 13 * K, 8 * K); [4.5, 10.5].forEach(rx => { c.save(); c.translate(rx * K, -10 * K); c.rotate(on ? t * 4 : 0); c.fillStyle = '#c9ced4'; c.beginPath(); c.arc(0, 0, 2.2 * K, 0, TAU); c.fill(); c.fillStyle = '#1b2228'; c.fillRect(-.4 * K, -2.2 * K, .8 * K, 4.4 * K); c.restore(); });
+      for (let i = 0; i < 5; i++) { c.fillStyle = i === 1 && on ? '#d83a32' : '#c9ced4'; c.fillRect((-14 + i * 6) * K, -21 * K, 4 * K, 2.4 * K); }
+    } else if (tier === 3) { // große Anlage: Verstärker in der Mitte, zwei Turm-Lautsprecher mit Lichtringen
+      const hue = (t * 60) % 360;
+      [-1, 1].forEach(s2 => { const tx = s2 * 30 * K; c.fillStyle = '#16161a'; c.strokeStyle = '#111'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(tx - 9 * K, -48 * K, 18 * K, 48 * K, 3 * K); c.fill(); c.stroke();
+        [-34, -14].forEach((wy, j) => { const r = (j ? 7.5 : 5.5) * K; if (on) { c.save(); c.shadowColor = `hsl(${(hue + j * 120 + (s2 > 0 ? 60 : 0)) % 360},90%,60%)`; c.shadowBlur = 10 * K * pulse; c.strokeStyle = c.shadowColor; c.lineWidth = 1.6 * K; c.beginPath(); c.arc(tx, wy * K, r * pulse + 1.5 * K, 0, TAU); c.stroke(); c.restore(); }
+          circ(tx, wy * K, r * pulse, '#0b0b0d'); circ(tx, wy * K, r * .55 * pulse, '#3a3c42'); circ(tx, wy * K, r * .2, m.a); }); });
+      c.fillStyle = '#26262c'; c.strokeStyle = '#111'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(-18 * K, -24 * K, 36 * K, 24 * K, 3 * K); c.fill(); c.stroke();
+      c.fillStyle = '#0e1a14'; c.fillRect(-14 * K, -20 * K, 28 * K, 9 * K); for (let i = 0; i < 8; i++) { const hgt = on ? (2 + Math.abs(Math.sin(t * 7 + i * 1.3)) * 6) * K : 1 * K; c.fillStyle = `hsl(${(hue + i * 25) % 360},85%,${on ? 58 : 30}%)`; c.fillRect((-13 + i * 3.3) * K, -11.5 * K - hgt, 2.4 * K, hgt); }
+      [-8, 0, 8].forEach((kx, i) => { circ(kx * K, -5 * K, 2.4 * K, '#c9ced4'); c.strokeStyle = '#141414'; c.lineWidth = 1; c.beginPath(); c.moveTo(kx * K, -5 * K); c.lineTo(kx * K + Math.cos(t * (on ? 1 : 0) + i) * 2 * K, -5 * K + Math.sin(t * (on ? 1 : 0) + i) * 2 * K); c.stroke(); });
+      if (on) { c.save(); c.globalCompositeOperation = 'lighter'; const g2 = c.createRadialGradient(0, 0, 2, 0, 0, 60 * K); g2.addColorStop(0, `hsla(${hue},90%,60%,${.18 + beat * .2})`); g2.addColorStop(1, 'hsla(0,0%,0%,0)'); c.fillStyle = g2; c.fillRect(-60 * K, -60 * K, 120 * K, 70 * K); c.restore(); }
+    } else {
+      if (tier === 2) c.scale(1.18, 1.18);
     c.fillStyle = '#26262c'; c.strokeStyle = '#111'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(-26 * K, -26 * K, 52 * K, 26 * K, 4 * K); c.fill(); c.stroke();
     c.strokeStyle = m.a; c.lineWidth = 2.6 * K; c.beginPath(); c.moveTo(-16 * K, -26 * K); c.lineTo(-13 * K, -33 * K); c.lineTo(13 * K, -33 * K); c.lineTo(16 * K, -26 * K); c.stroke();
     [-1, 1].forEach(s2 => { circ(s2 * 14 * K, -12 * K, 8.5 * K * pulse, '#0e0e10'); circ(s2 * 14 * K, -12 * K, 5.5 * K * pulse, '#3a3c42'); circ(s2 * 14 * K, -12 * K, 2.5 * K, m.a); });
     c.fillStyle = '#0e1a14'; c.fillRect(-6 * K, -22 * K, 12 * K, 7 * K); c.fillStyle = on ? '#2affb0' : '#3b5b4b';
     for (let i = 0; i < 4; i++) { const hgt = on ? (2 + Math.abs(Math.sin(t * 7 + i * 1.7)) * 4) * K : 1 * K; c.fillRect(-5 * K + i * 2.6 * K, -15.5 * K - hgt, 1.8 * K, hgt); }
     c.fillStyle = on ? '#d83a32' : '#555'; c.beginPath(); c.arc(0, -6 * K, 2 * K, 0, TAU); c.fill();
+      if (tier === 2) { c.fillStyle = on ? `hsl(${(t * 80) % 360},90%,60%)` : '#3a3c42'; if (on) { c.shadowColor = c.fillStyle; c.shadowBlur = 8 * K * (1 + beat); } c.fillRect(-24 * K, -1.5 * K, 48 * K, 2.4 * K); c.shadowBlur = 0; [-1, 1].forEach(s2 => circ(s2 * 22 * K, -23 * K, 2.4 * K, '#c9ced4')); }
+    }
     c.restore();
-    Sc.boomRect = { x: x - 28 * K, y: by - 36 * K, w: 56 * K, h: 36 * K + st };
+    { const bx = [[-19, -26, 38, 26], [-28, -36, 56, 36], [-32, -42, 64, 42], [-40, -50, 80, 50]][tier]; Sc.boomRect = { x: x + bx[0] * K, y: by + bx[1] * K, w: bx[2] * K, h: -bx[1] * K + st }; } // Klickfläche wächst mit der Stufe
     if (on && Math.random() < .05 + beat * .05) Sc.particle('note', x + rnd(-20, 20) * K, by - 34 * K);
     if (Sc.boomHint > 0) { Sc.boomHint -= 1 / 60; Sc.pill(x, by - 46 * K, on ? song.name : 'Musik aus', '', on ? '#b28cff' : '#888', on ? '♪' : '🔇'); } },
   barren(x, y, k) { const m = mat('barren'); [-1, 1].forEach(s => { metal(x + s * 16 * k - 2 * k, y - 62 * k, 4 * k, 62 * k, m, 1); }); metal(x - 22 * k, y - 64 * k, 44 * k, 4 * k, m); metal(x - 22 * k, y - 58 * k, 44 * k, 2 * k, m); },
@@ -575,14 +595,8 @@ function drawBarkeeper(x, y, G, t, dt, K) {
   const f = frameOf(p, fn) || frameOf(p, 'watch:0') || Object.values(p.fr)[0]; if (!f) return;
   drawFrame(p, f); if (p.topW) Sc.npcPos.bar = { x: p.topW.x, y: p.topW.y };
 }
-function drawBar(G, k, t) {
-  const K = k * 1.85, x1 = W + 6, cw = Math.min(W * .3, 260 * K), x0 = x1 - cw, yB = G.yF + 16, fh0 = 60 * K, yT = yB - fh0, dx = 22 * K, dd = 16 * K, lvl = MK.S.eq.kuehl || 1;
-  const st = BAR_ST[Math.min(BAR_ST.length - 1, MK.S.gym)] || BAR_ST[3], lw = cw * .2, Fx = cw * .17, Fy = Fx * dd / dx, now = performance.now(), dt = Math.min(.1, (now - (Sc._barT || now)) / 1000); Sc._barT = now;
-  const yF2 = yB + Fy, yt2 = yF2 - fh0, Dp = Fy + dd, Dx = Dp * dx / dd; // Front liegt vorn im Raum, der Schenkel läuft an der linken Seite nach hinten bis zur Wand
-  Sc.barX0 = x0 - dx; Sc.barY = yF2; Sc.barSpot = { x: x0 + Fx - Dx * .4 - 18 * K, y: yF2 - Dp * .4 + 6 * K };
-  if (Sc.barOrder) { Sc.barOrder.t += dt; if (Sc.barOrder.t > 12) Sc.barOrder = null; }
-  // Kühlschrank an der Wand hinter der Theke
-  const fw = 60 * K, fh = 128 * K, fx = x0 + cw * .44 - fw / 2 - dx * .6, fy = G.yF - 6 - fh;
+/* Kühlschrank: sieht mit jeder Stufe besser aus – 1 alt/klein (Retro), 2 modern, 3–4 Glastür-Kühler mit LED, 5–6 Edelstahl-Doppeltür mit Innenlicht */
+function drawFridgeGlass(fx, fy, fw, fh, K, lvl) {
   c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(fx + 7 * K, fy + 7 * K, fw, fh);
   const gf = c.createLinearGradient(fx, 0, fx + fw, 0); gf.addColorStop(0, '#2a2d33'); gf.addColorStop(.5, '#16181c'); gf.addColorStop(1, '#0b0c0e'); c.fillStyle = gf; c.beginPath(); c.roundRect(fx, fy, fw, fh, 3 * K); c.fill();
   c.fillStyle = '#0b0c0e'; c.beginPath(); c.moveTo(fx + fw, fy + 2 * K); c.lineTo(fx + fw + 8 * K, fy + 7 * K); c.lineTo(fx + fw + 8 * K, fy + fh + 2 * K); c.lineTo(fx + fw, fy + fh); c.fill(); // Seite
@@ -593,7 +607,49 @@ function drawBar(G, k, t) {
   c.fillStyle = 'rgba(255,255,255,.18)'; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + gw * .35, gy); c.lineTo(gx, gy + gh * .55); c.fill();
   c.strokeStyle = '#3a3d44'; c.lineWidth = 2 * K; c.strokeRect(gx, gy, gw, gh); c.fillStyle = '#c9ced4'; c.fillRect(gx + gw - 5 * K, gy + gh * .35, 2 * K, gh * .3);
   c.fillStyle = lvl >= 4 ? '#e6b422' : '#1fb5d6'; c.shadowColor = c.fillStyle; c.shadowBlur = 8 * K; c.fillRect(fx + 6 * K, fy + 5 * K, fw - 12 * K, 3 * K); c.shadowBlur = 0;
-  Sc.kuehlRect = { x: fx, y: fy, w: fw, h: fh };
+}
+function drawFridge(fx, fy, fw, fh, K, lvl, t) {
+  const tier = lvl <= 1 ? 0 : lvl === 2 ? 1 : lvl <= 4 ? 2 : 3;
+  if (tier === 2) { drawFridgeGlass(fx, fy, fw, fh, K, lvl); return { x: fx, y: fy, w: fw, h: fh }; }
+  if (tier === 0) { // alter, kleiner Retro-Kühlschrank: cremefarben, runde Kanten, Chromgriff
+    const w = fw * .86, h = fh * .72, x = fx + (fw - w) / 2, y = fy + fh - h;
+    c.fillStyle = "rgba(0,0,0,.3)"; c.fillRect(x + 6 * K, y + 6 * K, w, h);
+    const g = c.createLinearGradient(x, 0, x + w, 0); g.addColorStop(0, "#efe7cf"); g.addColorStop(.6, "#e2d8bb"); g.addColorStop(1, "#c9bd9c"); c.fillStyle = g; c.strokeStyle = "#141414"; c.lineWidth = 1.5;
+    c.beginPath(); c.roundRect(x, y, w, h, [14 * K, 14 * K, 4 * K, 4 * K]); c.fill(); c.stroke();
+    c.strokeStyle = "rgba(0,0,0,.35)"; c.lineWidth = 1.2 * K; c.beginPath(); c.moveTo(x + 3 * K, y + h * .34); c.lineTo(x + w - 3 * K, y + h * .34); c.stroke();
+    c.fillStyle = "#c9ced4"; c.fillRect(x + w - 9 * K, y + h * .12, 3 * K, h * .16); c.fillRect(x + w - 9 * K, y + h * .42, 3 * K, h * .22);
+    c.fillStyle = "#d83a32"; c.beginPath(); c.arc(x + w / 2, y + h * .2, 4 * K, 0, TAU); c.fill(); c.fillStyle = "rgba(255,255,255,.35)"; c.fillRect(x + 4 * K, y + 8 * K, 3 * K, h - 20 * K);
+    c.fillStyle = "#555"; c.fillRect(x + 6 * K, y + h, 4 * K, 3 * K); c.fillRect(x + w - 10 * K, y + h, 4 * K, 3 * K); return { x, y, w, h }; }
+  if (tier === 1) { // moderner weißer Kühlschrank mit Gefrierfach und Display
+    c.fillStyle = "rgba(0,0,0,.32)"; c.fillRect(fx + 7 * K, fy + 7 * K, fw, fh);
+    const g = c.createLinearGradient(fx, 0, fx + fw, 0); g.addColorStop(0, "#ffffff"); g.addColorStop(.7, "#e9edf0"); g.addColorStop(1, "#c9d0d6"); c.fillStyle = g; c.strokeStyle = "#141414"; c.lineWidth = 1.5;
+    c.beginPath(); c.roundRect(fx, fy, fw, fh, 4 * K); c.fill(); c.stroke(); c.strokeStyle = "rgba(0,0,0,.3)"; c.beginPath(); c.moveTo(fx + 2 * K, fy + fh * .3); c.lineTo(fx + fw - 2 * K, fy + fh * .3); c.stroke();
+    c.fillStyle = "#8a939a"; c.fillRect(fx + fw - 8 * K, fy + fh * .08, 3 * K, fh * .16); c.fillRect(fx + fw - 8 * K, fy + fh * .36, 3 * K, fh * .3);
+    c.fillStyle = "#1a2a32"; c.fillRect(fx + fw * .22, fy + fh * .1, fw * .36, fh * .08); c.fillStyle = "#7fe3ff"; c.font = `700 ${Math.max(6, 7 * K)}px Arial`; c.textAlign = "center"; c.fillText("4°", fx + fw * .4, fy + fh * .165);
+    c.fillStyle = "rgba(255,255,255,.5)"; c.fillRect(fx + 4 * K, fy + 6 * K, 2.5 * K, fh - 12 * K); return { x: fx, y: fy, w: fw, h: fh }; }
+  // Stufe 3: Edelstahl-Doppeltür mit Glas und Innenlicht (breiter, nach links erweitert)
+  const W2 = fw * 1.55, x2 = fx - (W2 - fw), h2 = fh, y2 = fy, half = W2 / 2;
+  c.fillStyle = "rgba(0,0,0,.35)"; c.fillRect(x2 + 7 * K, y2 + 7 * K, W2, h2);
+  const g = c.createLinearGradient(x2, 0, x2 + W2, 0); g.addColorStop(0, "#d9dde1"); g.addColorStop(.25, "#f4f6f8"); g.addColorStop(.5, "#b9c0c7"); g.addColorStop(.75, "#eef1f3"); g.addColorStop(1, "#9aa3ad"); c.fillStyle = g; c.strokeStyle = "#141414"; c.lineWidth = 1.5;
+  c.beginPath(); c.roundRect(x2, y2, W2, h2, 4 * K); c.fill(); c.stroke();
+  [0, 1].forEach(d => { const gx = x2 + d * half + 5 * K, gy = y2 + 16 * K, gw = half - 10 * K, gh = h2 - 26 * K; const ig = c.createLinearGradient(0, gy, 0, gy + gh); ig.addColorStop(0, "#fffbe8"); ig.addColorStop(1, "#cfe8ff"); c.fillStyle = ig; c.fillRect(gx, gy, gw, gh);
+    const cols = ["#ff5a36", "#2bb673", "#3a86ff", "#ffc83d", "#ff8fb1", "#f2f2f2", "#7b2cbf", "#1fb5d6"], rows = 5, rh = gh / rows;
+    for (let r = 0; r < rows; r++) { const sy = gy + (r + 1) * rh; c.fillStyle = "rgba(255,255,255,.95)"; c.fillRect(gx, sy - 1.4 * K, gw, 1.4 * K); for (let i = 0; i < 4; i++) { const bw = gw / 4 * .6, bx = gx + (i + .2) * gw / 4, bh = rh * ((r + i + d) % 3 ? .55 : .72); c.fillStyle = cols[(r * 3 + i + d * 2) % cols.length]; c.beginPath(); c.roundRect(bx, sy - 1.4 * K - bh, bw, bh, 1.2 * K); c.fill(); } }
+    const lg = c.createRadialGradient(gx + gw / 2, gy, 2, gx + gw / 2, gy, gh * .8); lg.addColorStop(0, "rgba(255,250,220,.55)"); lg.addColorStop(1, "rgba(255,250,220,0)"); c.fillStyle = lg; c.fillRect(gx, gy, gw, gh);
+    c.strokeStyle = "#5c636e"; c.lineWidth = 2 * K; c.strokeRect(gx, gy, gw, gh); c.fillStyle = "#3a3d44"; c.fillRect(x2 + d * half + (d ? 3 : half - 6) * K + (d ? 0 : -0), gy + gh * .3, 2.5 * K, gh * .35); });
+  c.fillStyle = lvl >= 6 ? "#a9c8ff" : "#e6b422"; c.shadowColor = c.fillStyle; c.shadowBlur = 10 * K; c.fillRect(x2 + 6 * K, y2 + 5 * K, W2 - 12 * K, 3 * K); c.shadowBlur = 0;
+  const glow = c.createRadialGradient(x2 + W2 / 2, y2 + h2 * .5, 4, x2 + W2 / 2, y2 + h2 * .5, W2); glow.addColorStop(0, "rgba(255,240,190,.18)"); glow.addColorStop(1, "rgba(255,240,190,0)"); c.fillStyle = glow; c.fillRect(x2 - W2 * .4, y2 - 10, W2 * 1.8, h2 + 20);
+  return { x: x2, y: y2, w: W2, h: h2 };
+}
+function drawBar(G, k, t) {
+  const K = k * 1.85, x1 = W + 6, cw = Math.min(W * .3, 260 * K), x0 = x1 - cw, yB = G.yF + 16, fh0 = 60 * K, yT = yB - fh0, dx = 22 * K, dd = 16 * K, lvl = MK.S.eq.kuehl || 1;
+  const st = BAR_ST[Math.min(BAR_ST.length - 1, MK.S.gym)] || BAR_ST[3], lw = cw * .2, Fx = cw * .17, Fy = Fx * dd / dx, now = performance.now(), dt = Math.min(.1, (now - (Sc._barT || now)) / 1000); Sc._barT = now;
+  const yF2 = yB + Fy, yt2 = yF2 - fh0, Dp = Fy + dd, Dx = Dp * dx / dd; // Front liegt vorn im Raum, der Schenkel läuft an der linken Seite nach hinten bis zur Wand
+  Sc.barX0 = x0 - dx; Sc.barY = yF2; Sc.barSpot = { x: x0 + Fx - Dx * .4 - 18 * K, y: yF2 - Dp * .4 + 6 * K };
+  if (Sc.barOrder) { Sc.barOrder.t += dt; if (Sc.barOrder.t > 12) Sc.barOrder = null; }
+  // Kühlschrank an der Wand hinter der Theke
+  const fw = 60 * K, fh = 128 * K, fx = x0 + cw * .44 - fw / 2 - dx * .6, fy = G.yF - 6 - fh;
+  Sc.kuehlRect = drawFridge(fx, fy, fw, fh, K, lvl, t); // Aussehen nach Kühlschrank-Stufe (Laden → Geräte)
   if (st.shabby) { c.strokeStyle = 'rgba(30,30,30,.8)'; c.lineWidth = 1; c.beginPath(); c.moveTo(fx + fw * .7, fy - 40 * K); c.lineTo(fx + fw * .7, fy - 12 * K); c.stroke(); const gl = c.createRadialGradient(fx + fw * .7, fy - 8 * K, 1, fx + fw * .7, fy - 8 * K, 40 * K); gl.addColorStop(0, 'rgba(255,230,150,.45)'); gl.addColorStop(1, 'rgba(255,230,150,0)'); c.fillStyle = gl; c.fillRect(fx + fw * .7 - 40 * K, fy - 48 * K, 80 * K, 80 * K); circ(fx + fw * .7, fy - 8 * K, 4 * K, '#ffe9a8'); }
   // Barkeeper hinter dem Tresen
   drawBarkeeper(x0 + cw * .7 - dx * .5, yF2 - dd * .6, G, t, dt, K);
