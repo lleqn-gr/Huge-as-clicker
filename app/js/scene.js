@@ -180,14 +180,16 @@ Sc.weather = () => { if (Sc.forceWeather) return Sc.forceWeather; const k = Math
 const SKY = [[0, '#2a3355', '#f2a37a'], [.1, '#6fa2d8', '#ffd2a1'], [.2, '#7fb8ec', '#d6ebff'], [.5, '#6fa8e2', '#d6ebff'], [.6, '#5a6fb0', '#ffb070'], [.7, '#2c2f5c', '#e07050'], [.78, '#0e1430', '#1f2850'], [.95, '#0c1228', '#1a2246'], [1, '#2a3355', '#f2a37a']];
 function skyAt(p) { for (let i = 1; i < SKY.length; i++) if (p <= SKY[i][0]) { const [a, t1, b1] = SKY[i - 1], [b, t2, b2] = SKY[i], k = (p - a) / (b - a); return [lerpC(t1, t2, k), lerpC(b1, b2, k)]; } return [SKY[0][1], SKY[0][2]]; }
 let flashW = 0, thunderAt = 0;
-function drawWindow(x, y, w, h, t, mull) {
+function drawWindow(x, y, w, h, t, mull, sky) {
   const p = Sc.dayPhase(), wx = Sc.weather(), [top, bot] = skyAt(p), cloudy = wx !== 'sonne', night = p > .72 && p < .97;
   c.save(); c.beginPath(); c.rect(x, y, w, h); c.clip();
   let g = c.createLinearGradient(0, y, 0, y + h); g.addColorStop(0, cloudy ? lerpC(top, '#7a8494', .5) : top); g.addColorStop(1, cloudy ? lerpC(bot, '#9aa2ae', .5) : bot); c.fillStyle = g; c.fillRect(x, y, w, h);
-  // Sonne bzw. Mond wandern über den Himmel
-  const sp = p < .7 ? p / .7 : (p - .7) / .3, bx = x + w * (.1 + .8 * sp), by = y + h * (.85 - Math.sin(sp * Math.PI) * .6);
-  if (!cloudy || wx === 'wolken') { if (p < .7) { circ(bx, by, Math.min(w, h) * .16, '#fff3b0'); g = c.createRadialGradient(bx, by, 1, bx, by, Math.min(w, h) * .5); g.addColorStop(0, 'rgba(255,240,170,.5)'); g.addColorStop(1, 'rgba(255,240,170,0)'); c.fillStyle = g; c.fillRect(x, y, w, h); }
-    else { circ(bx, by, Math.min(w, h) * .12, '#f1efe0'); circ(bx + Math.min(w, h) * .05, by - 1, Math.min(w, h) * .1, top); } }
+  // Sonne bzw. Mond wandern über EINEN gemeinsamen Himmel: Bei mehreren Fenstern schaut jedes auf denselben Himmel (sky = Fläche über alle Fenster),
+  // die Sonne / der Mond ist also höchstens in einem Fenster zu sehen – oder gerade hinter der Wand dazwischen.
+  const S2 = sky || { x, y, w, h, r: Math.min(w, h) };
+  const sp = p < .7 ? p / .7 : (p - .7) / .3, bx = S2.x + S2.w * (.1 + .8 * sp), by = S2.y + S2.h * (.85 - Math.sin(sp * Math.PI) * .6), R = S2.r;
+  if (!cloudy || wx === 'wolken') { if (p < .7) { circ(bx, by, R * .16, '#fff3b0'); g = c.createRadialGradient(bx, by, 1, bx, by, R * .5); g.addColorStop(0, 'rgba(255,240,170,.5)'); g.addColorStop(1, 'rgba(255,240,170,0)'); c.fillStyle = g; c.fillRect(x, y, w, h); }
+    else { circ(bx, by, R * .12, '#f1efe0'); circ(bx + R * .05, by - 1, R * .1, top); } }
   if (night && !cloudy) for (let i = 0; i < 10; i++) { const sx = x + (i * 263.7 % w), sy = y + ((i * 23) % 100) / 100 * h * .7; c.fillStyle = `rgba(255,255,255,${.4 + .4 * Math.sin(t * 2 + i)})`; c.fillRect(sx, sy, 1.2, 1.2); }
   if (cloudy) { const cc = night ? 'rgba(60,66,90,.85)' : wx === 'wolken' ? 'rgba(255,255,255,.85)' : 'rgba(150,156,168,.9)';
     for (let i = 0; i < 4; i++) { const cx = x + ((t * 4 + i * w * .45) % (w * 1.6)) - w * .3, cy = y + h * (.2 + (i % 2) * .18); ell(cx, cy, w * .22, h * .1 + 2, cc); ell(cx + w * .12, cy - h * .05, w * .15, h * .1 + 2, cc); } }
@@ -417,9 +419,11 @@ function neonSigns(t, G) { const S = MK.S; if (S.gym < 2) return; const bk = Sc.
   c.restore(); }
 function drawGym(t) {
   const S = MK.S, G = Sc.geo(), st = GYMSTYLE[S.gym], key = [S.gym, W, H, Math.round(G.yF), dpr, S.fame > 40 ? 1 : 0].join(':');
-  if (BGC.key !== key) { const [cv2, x2] = texCanvas(W, H), c0 = c; c = x2; WINQ = []; try { drawGymStatic(t); } finally { BGC.win = WINQ; WINQ = null; c = c0; } BGC.key = key; BGC.cv = cv2; }
+  if (BGC.key !== key) { const [cv2, x2] = texCanvas(W, H), c0 = c; c = x2; WINQ = []; try { drawGymStatic(t); } finally { BGC.win = WINQ; BGC.sky = null; WINQ = null; c = c0; } BGC.key = key; BGC.cv = cv2; }
   c.drawImage(BGC.cv, 0, 0, W, H);
-  BGC.win.forEach(a => drawWindow(a[0], a[1], a[2], a[3], t, a[5]));
+  if (BGC.win.length && !BGC.sky) { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, r = 1e9; BGC.win.forEach(a => { x0 = Math.min(x0, a[0]); y0 = Math.min(y0, a[1]); x1 = Math.max(x1, a[0] + a[2]); y1 = Math.max(y1, a[1] + a[3]); r = Math.min(r, a[2], a[3]); });
+    BGC.sky = { x: x0, y: y0, w: x1 - x0, h: y1 - y0, r }; } // ein Himmel für alle Fenster
+  BGC.win.forEach(a => drawWindow(a[0], a[1], a[2], a[3], t, a[5], BGC.sky));
   neonSigns(t, G);
   if (S.gym === 2) { const glow = .7 + Math.sin(t * 3) * .05; c.save(); c.shadowColor = '#14b8a6'; c.shadowBlur = 18; c.fillStyle = `rgba(20,184,166,${glow})`; c.font = `900 ${Math.max(18, H * .07)}px "Arial Black", Arial, sans-serif`; c.textAlign = 'center'; c.fillText('FIT+', W * .82, 64); c.restore(); }
   drawTrophyCase(t);
