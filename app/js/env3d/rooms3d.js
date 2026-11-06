@@ -105,7 +105,7 @@ function trophyShelf(g, C, L, gym, wx, wy, zW, anchors) {
 }
 
 /* ---------- Raum bauen ---------- */
-export function buildRoom(gym, C, L, wx, wy, anchors) {
+export function buildRoom(gym, C, L, wx, wy, anchors, bar) {
   const R = ROOMS[gym], g = new THREE.Group(), zW = -C.zw;
   const topY = wy(C, -20, C.zw) + .5, halfW = wx(C, C.W + 40, C.zw) + 1.5, wins = [];
   const WIN = R.wins(L).map(([sx, sy, sw, sh, mull]) => { wins.push([sx, sy, sw, sh, 0, 0]); return { x0: wx(C, sx, C.zw), x1: wx(C, sx + sw, C.zw), y1: wy(C, sy, C.zw), y0: wy(C, sy + sh, C.zw), mull }; });
@@ -147,12 +147,13 @@ export function buildRoom(gym, C, L, wx, wy, anchors) {
     const tw = wx(C, L.W * .5 + L.W * .2, C.zw) * 2; panel(g, texMat('tempel', 1024, 128, signPaint('★ MUSKEL-TEMPEL ★', '#1a0a10', '#e6b422'), { clamp: true }), tm('#c9971c'), 0, wy(C, 40, C.zw), zW + .06, tw, tw * 128 / 1024, .06, .8);
     [[0, .12], [.88, 1]].forEach(([a, b]) => curtain(g, wx(C, L.W * a, C.zw - .5), wx(C, L.W * b, C.zw - .5), topY, zW + .5)); }
   // Lampen dort, wo scene.js ihr Licht zeichnet
-  lamps(g, C, L, R.light, wx, wy);
+  { const lg = new THREE.Group(); g.add(lg); lamps(lg, C, L, R.light, wx, wy); lg.traverse(o => { o.castShadow = false; }); } // Lampen werfen keine Schatten an die Wand
   // Poster
   const posters = posterList(); R.slots.forEach(([fx, fy], i) => { const p = posters[i]; if (!p) return; const x = wx(C, L.W * fx, C.zw), Y = wy(C, L.yF * fy, C.zw) - .4;
     panel(g, texMat('poster:' + p.id + p.t2, 256, 360, posterPaint(p), { clamp: true }), tm('#141414'), x, Y, zW + .03, .48, .67, .02, .7); });
   trophyShelf(g, C, L, gym, wx, wy, zW, anchors);
-  return { g, wins };
+  const front = bar ? buildBar(g, C, L, wx, wy, zW, bar, gym) : null;
+  return { g, wins, front };
 }
 const signPaint = (txt, bg, fg) => (x, w, h) => { x.fillStyle = bg || '#6b4a2b'; x.fillRect(0, 0, w, h); x.fillStyle = 'rgba(255,255,255,.08)'; for (let i = 0; i < 6; i++) x.fillRect(0, i * h / 6, w, 2);
   x.strokeStyle = fg ? 'rgba(230,180,34,.6)' : '#3a2614'; x.lineWidth = 8; x.strokeRect(4, 4, w - 8, h - 8);
@@ -179,4 +180,35 @@ function lamps(g, C, L, type, wx, wy) {
     xs.forEach((fx, i) => { const [x, Y] = at(fx, type === 'spots' ? 10 : 12); cyl(g, tm('#1b1b1e'), x, Y + 1, -zl, .015, 2, null, .3, CYL8); const can = cyl(g, tm('#1b1b1e'), x, Y + .05, -zl, .12, .22, null, .8); can.rotation.x = .35;
       cyl(g, glow(type === 'stage' ? cols[i % 3] : '#fff0d0'), x, Y - .06, -zl + .04, .09, .02, null, 0).rotation.x = .35; }); }
   if (type === 'bulb') { const [x, Y] = at(.5, 0); cyl(g, tm('#222'), x, Y + .05, -zl, .06, .08, null, .5); }
+}
+
+/* ---------- Theke (wenn der Kühlschrank gekauft ist): Kühlschrank an der Wand, Tresen über Eck ----------
+   Maße aus scene.js (barGeom = dieselben Zahlen wie die 2D-Theke) → Klickflächen und Laufwege der Gäste passen.
+   Der Tresen kommt zusätzlich in eine Vordergrund-Ebene: scene.js zeichnet sie NACH dem 2D-Barkeeper → er steht dahinter. */
+const fridgePaint = lvl => (x, w, h) => { const g = x.createLinearGradient(0, 0, 0, h); g.addColorStop(0, '#e6f6ff'); g.addColorStop(1, '#9fc8e6'); x.fillStyle = g; x.fillRect(0, 0, w, h);
+  const cols = ['#ff5a36', '#2bb673', '#3a86ff', '#ffc83d', '#ff8fb1', '#f2f2f2', '#7b2cbf', '#1fb5d6'], rows = 5, rh = h / rows, n = 5 + (lvl > 1 ? 1 : 0);
+  for (let r = 0; r < rows; r++) { const sy = (r + 1) * rh; x.fillStyle = 'rgba(255,255,255,.95)'; x.fillRect(0, sy - 4, w, 4);
+    for (let i = 0; i < n; i++) { const bw = w / n * .62, bx = (i + .2) * w / n, tall = (r + i) % 3 === 0, bh = rh * (tall ? .72 : .55); x.fillStyle = cols[(r * 3 + i) % cols.length]; x.beginPath(); x.roundRect(bx, sy - 4 - bh, bw, bh, 6); x.fill();
+      if (tall) { x.fillStyle = '#222'; x.fillRect(bx + bw * .3, sy - 4 - bh - 6, bw * .4, 6); } x.fillStyle = 'rgba(255,255,255,.4)'; x.fillRect(bx + bw * .15, sy - 4 - bh * .85, bw * .18, bh * .6); } }
+  x.fillStyle = 'rgba(255,255,255,.2)'; x.beginPath(); x.moveTo(0, 0); x.lineTo(w * .35, 0); x.lineTo(0, h * .55); x.fill(); x.strokeStyle = '#3a3d44'; x.lineWidth = 8; x.strokeRect(0, 0, w, h); };
+function buildBar(g, C, L, wx, wy, zW, B, gym) {
+  const st = B.st, front = new THREE.Group(), lvl = MK.S.eq.kuehl || 1;
+  // Kühlschrank an der Wand (Bildschirm-Rechteck wie in 2D)
+  { const z = C.zw - .35, x0 = wx(C, B.fx, z), x1 = wx(C, B.fx + B.fw, z), yT = wy(C, B.fy, z), yB = wy(C, B.fy + B.fh, z), w = x1 - x0, h = yT - yB;
+    box(g, tm('#1a1c21'), x0 + w / 2, yB + h / 2, -z, w, h, .6); panel(g, texMat('fridge' + lvl, 256, 512, fridgePaint(lvl), { clamp: true }), tm('#2a2d33'), x0 + w / 2, yB + h * .45, -z + .31, w * .86, h * .82, .02, 0);
+    box(g, glow(lvl >= 4 ? '#e6b422' : '#1fb5d6'), x0 + w / 2, yT - h * .05, -z + .31, w * .8, h * .025, .02, 0); box(g, tm('#c9ced4'), x0 + w * .88, yB + h * .45, -z + .34, .04, h * .3, .04, .4); }
+  // Tresen: vorne lang (bis zum rechten Rand), links ein Schenkel nach hinten bis zur Wand
+  const zf = C.f * C.h / Math.max(1, B.yF2 - C.cy), xa = wx(C, B.x0 + B.Fx, zf), xb = wx(C, B.x0 + B.Fx + B.lw, zf), xr = wx(C, B.x1 + 40, zf), Hc = B.fh0 * zf / C.f, dep = .62;
+  const FR = tm(st.fr[0]), TOP = tm(st.top), ED = tm(st.edge);
+  const part = (x0, x1, z0, z1) => { const w = x1 - x0, d = z1 - z0, cx = (x0 + x1) / 2, cz = -(z0 + z1) / 2;
+    box(front, FR, cx, Hc / 2, cz, w, Hc, d); box(front, TOP, cx, Hc + .03, cz, w + .08, .06, d + .08); box(front, ED, cx, Hc - .02, cz, w + .085, .025, d + .085, 0);
+    if (st.led) box(front, glow(st.led), cx, .06, cz + d / 2 + .005, w, .03, .01, 0); };
+  part(xb - .01, xr, zf, zf + dep);            // langer Teil vorne
+  part(xa, xb, zf, C.zw - .05);                // Schenkel bis zur Wand
+  // Name des Gyms auf der Front
+  const name = MK.GYMS[gym].name, ff = (st.font || '700 Spx Arial').replace('S', '96').split('"').join('');
+  const tex = texMat('bar' + gym, 1024, 160, (x, w, h) => { x.fillStyle = st.fr[0]; x.fillRect(0, 0, w, h); if (st.planks) for (let i = 0; i < 8; i++) { x.fillStyle = i % 2 ? 'rgba(0,0,0,.08)' : 'rgba(255,255,255,.04)'; x.fillRect(0, i * h / 8, w, h / 8); }
+    x.fillStyle = st.txt; x.font = ff; x.textAlign = 'center'; x.textBaseline = 'middle'; x.fillText(name, w * .5, h * .55); }, { clamp: true });
+  const fw2 = Math.min(xr, wx(C, L.W, zf)) - xb; panel(front, tex, FR, xb + fw2 / 2, Hc * .58, -zf + .006, fw2 * .92, Hc * .5, .004, 0);
+  return front;
 }

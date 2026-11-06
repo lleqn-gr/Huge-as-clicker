@@ -434,7 +434,7 @@ function drawGym(t) {
   if (BGC.gymSeen != null && BGC.gymSeen !== MK.S.gym && BGC.cv && !MK.S.set.reduce) { const f = BGC.fade && BGC.fade.cv || document.createElement('canvas'); f.width = BGC.cv.width; f.height = BGC.cv.height; f.getContext('2d').drawImage(BGC.cv, 0, 0); BGC.fade = { cv: f, t0: performance.now() }; }
   BGC.gymSeen = MK.S.gym;
   const S = MK.S, G = Sc.geo(), st = GYMSTYLE[S.gym], env = env3dFor(G), key = env ? env.key : [S.gym, W, H, Math.round(G.yF), dpr, S.fame > 40 ? 1 : 0].join(':');
-  Sc.env3dOn = !!env; Sc._env = env;
+  Sc.env3dOn = !!env; Sc._env = env; // env.cv = Raum, env.eq = Geräte-Ebene, env.front = Tresen-Ebene
   if (BGC.key !== key) { if (env) { BGC.cv = env.cv; BGC.win = env.win; BGC.sky = null; }
     else { const [cv2, x2] = texCanvas(W, H), c0 = c; c = x2; WINQ = []; try { drawGymStatic(t); } finally { BGC.win = WINQ; BGC.sky = null; WINQ = null; c = c0; } BGC.cv = cv2; }
     BGC.key = key; }
@@ -612,6 +612,10 @@ function drawBarkeeper(x, y, G, t, dt, K) {
   const f = frameOf(p, fn) || frameOf(p, 'watch:0') || Object.values(p.fr)[0]; if (!f) return;
   drawFrame(p, f); if (p.topW) Sc.npcPos.bar = { x: p.topW.x, y: p.topW.y };
 }
+/* Theken-Maße für die 3D-Umgebung – dieselben Formeln wie drawBar (Klickflächen & Laufwege bleiben gleich) */
+Sc.barGeom = () => { const G = Sc.geo(), k = G.bg * .9, K = k * 1.85, x1 = W + 6, cw = Math.min(W * .3, 260 * K), x0 = x1 - cw, yB = G.yF + 16, fh0 = 60 * K, dx = 22 * K, dd = 16 * K;
+  const lw = cw * .2, Fx = cw * .17, Fy = Fx * dd / dx, yF2 = yB + Fy, fw = 60 * K, fh = 128 * K;
+  return { K, x0, x1, cw, fh0, lw, Fx, yF2, fw, fh, fx: x0 + cw * .44 - fw / 2 - dx * .6, fy: G.yF - 6 - fh, st: BAR_ST[Math.min(BAR_ST.length - 1, MK.S.gym)] || BAR_ST[3] }; };
 function drawBar(G, k, t) {
   const K = k * 1.85, x1 = W + 6, cw = Math.min(W * .3, 260 * K), x0 = x1 - cw, yB = G.yF + 16, fh0 = 60 * K, yT = yB - fh0, dx = 22 * K, dd = 16 * K, lvl = MK.S.eq.kuehl || 1;
   const st = BAR_ST[Math.min(BAR_ST.length - 1, MK.S.gym)] || BAR_ST[3], lw = cw * .2, Fx = cw * .17, Fy = Fx * dd / dx, now = performance.now(), dt = Math.min(.1, (now - (Sc._barT || now)) / 1000); Sc._barT = now;
@@ -620,7 +624,8 @@ function drawBar(G, k, t) {
   if (Sc.barOrder) { Sc.barOrder.t += dt; if (Sc.barOrder.t > 12) Sc.barOrder = null; }
   // Kühlschrank an der Wand hinter der Theke
   const fw = 60 * K, fh = 128 * K, fx = x0 + cw * .44 - fw / 2 - dx * .6, fy = G.yF - 6 - fh;
-  c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(fx + 7 * K, fy + 7 * K, fw, fh);
+  const b2 = !Sc.env3dOn; // mit 3D-Umgebung kommen Kühlschrank und Tresen aus 3D
+  if (b2) { c.fillStyle = 'rgba(0,0,0,.35)'; c.fillRect(fx + 7 * K, fy + 7 * K, fw, fh);
   const gf = c.createLinearGradient(fx, 0, fx + fw, 0); gf.addColorStop(0, '#2a2d33'); gf.addColorStop(.5, '#16181c'); gf.addColorStop(1, '#0b0c0e'); c.fillStyle = gf; c.beginPath(); c.roundRect(fx, fy, fw, fh, 3 * K); c.fill();
   c.fillStyle = '#0b0c0e'; c.beginPath(); c.moveTo(fx + fw, fy + 2 * K); c.lineTo(fx + fw + 8 * K, fy + 7 * K); c.lineTo(fx + fw + 8 * K, fy + fh + 2 * K); c.lineTo(fx + fw, fy + fh); c.fill(); // Seite
   const gx = fx + 5 * K, gy = fy + 14 * K, gw = fw - 10 * K, gh = fh - 22 * K, inn = c.createLinearGradient(0, gy, 0, gy + gh); inn.addColorStop(0, '#e6f6ff'); inn.addColorStop(1, '#9fc8e6'); c.fillStyle = inn; c.fillRect(gx, gy, gw, gh);
@@ -630,21 +635,23 @@ function drawBar(G, k, t) {
   c.fillStyle = 'rgba(255,255,255,.18)'; c.beginPath(); c.moveTo(gx, gy); c.lineTo(gx + gw * .35, gy); c.lineTo(gx, gy + gh * .55); c.fill();
   c.strokeStyle = '#3a3d44'; c.lineWidth = 2 * K; c.strokeRect(gx, gy, gw, gh); c.fillStyle = '#c9ced4'; c.fillRect(gx + gw - 5 * K, gy + gh * .35, 2 * K, gh * .3);
   c.fillStyle = lvl >= 4 ? '#e6b422' : '#1fb5d6'; c.shadowColor = c.fillStyle; c.shadowBlur = 8 * K; c.fillRect(fx + 6 * K, fy + 5 * K, fw - 12 * K, 3 * K); c.shadowBlur = 0;
+  }
   Sc.kuehlRect = { x: fx, y: fy, w: fw, h: fh };
   if (st.shabby) { c.strokeStyle = 'rgba(30,30,30,.8)'; c.lineWidth = 1; c.beginPath(); c.moveTo(fx + fw * .7, fy - 40 * K); c.lineTo(fx + fw * .7, fy - 12 * K); c.stroke(); const gl = c.createRadialGradient(fx + fw * .7, fy - 8 * K, 1, fx + fw * .7, fy - 8 * K, 40 * K); gl.addColorStop(0, 'rgba(255,230,150,.45)'); gl.addColorStop(1, 'rgba(255,230,150,0)'); c.fillStyle = gl; c.fillRect(fx + fw * .7 - 40 * K, fy - 48 * K, 80 * K, 80 * K); circ(fx + fw * .7, fy - 8 * K, 4 * K, '#ffe9a8'); }
   // Barkeeper hinter dem Tresen
   drawBarkeeper(x0 + cw * .7 - dx * .5, yF2 - dd * .6, G, t, dt, K);
+  if (!b2) { if (Sc._env && Sc._env.front) c.drawImage(Sc._env.front, 0, 0, W, H); } else { // 3D: Tresen als Vordergrund-Ebene über dem Barkeeper
   // Bodenschatten
   c.fillStyle = 'rgba(0,0,0,.42)'; c.beginPath(); c.moveTo(x0 + Fx - Dx - 8 * K, yF2 - Dp + 2 * K); c.lineTo(x0 + Fx - 8 * K, yF2 + 9 * K); c.lineTo(x1, yF2 + 9 * K); c.lineTo(x1, yF2 - dd); c.closePath(); c.fill();
   // Langer Teil vorn + Schenkel nach hinten zur Wand (über Eck)
   barBox(x0 + Fx + lw, x1, yF2, fh0, dx, dd, st, K, t, .1, true);
   c.fillStyle = st.txt; c.font = st.font.replace('S', Math.round(15 * K)); c.textAlign = 'center'; c.textBaseline = 'middle'; if (st.gold) { c.shadowColor = 'rgba(230,180,34,.7)'; c.shadowBlur = 8 * K; }
-  c.fillText(MK.GYMS[MK.S.gym].name, x0 + Fx + lw + (cw - Fx - lw) * .5, yt2 + fh0 * .6); c.shadowBlur = 0; c.textBaseline = 'alphabetic';
+  c.fillText(MK.GYMS[MK.S.gym].name, x0 + Fx + lw + (cw - Fx - lw) * .5, yt2 + fh0 * .6); c.shadowBlur = 0; c.textBaseline = 'alphabetic'; }
   const onTop = (fxp, dep) => ({ x: x0 + cw * fxp - dx * dep, y: yt2 - dd * dep });
   [[.84, .5, '#f4efe4', '#3a86ff', 0], [.92, .35, '#26262c', '#c9ced4', 1]].forEach(([fxp, dep, body, lid, big]) => { const p = onTop(fxp, dep), bh = (big ? 26 : 18) * K, bw2 = (big ? 17 : 12) * K;
     c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(p.x + 3 * K, p.y, bw2 * .6, 2.5 * K, 0, 0, TAU); c.fill();
     c.fillStyle = body; c.beginPath(); c.roundRect(p.x - bw2 / 2, p.y - bh, bw2, bh, 2.5 * K); c.fill(); c.fillStyle = lid; c.fillRect(p.x - bw2 / 2, p.y - bh, bw2, 4 * K); c.fillRect(p.x - bw2 / 2, p.y - bh * .55, bw2, bh * .25); c.fillStyle = 'rgba(255,255,255,.35)'; c.fillRect(p.x - bw2 * .35, p.y - bh * .9, bw2 * .15, bh * .7); });
-  barBox(x0 + Fx, x0 + Fx + lw, yF2, fh0, Dx, Dp, st, K, t, .6);
+  if (b2) barBox(x0 + Fx, x0 + Fx + lw, yF2, fh0, Dx, Dp, st, K, t, .6);
   // Bestellter Shake steht vorn auf der Platte bereit
   if (Sc.barOrder && Sc.barOrder.t > 4.2 && Sc.barOrder.t < 5.6) { const sx = x0 + Fx + lw * .5 - Dx * .2, sy = yt2 - Dp * .2; c.fillStyle = '#f4efe4'; c.beginPath(); c.roundRect(sx - 4 * K, sy - 14 * K, 8 * K, 14 * K, 2 * K); c.fill(); c.fillStyle = '#ee4035'; c.fillRect(sx - 4 * K, sy - 14 * K, 8 * K, 3 * K); }
   // Boombox auf dem Schenkel (Ecke)
@@ -1971,7 +1978,34 @@ Sc.snapshot = function () { try { return cv.toDataURL('image/jpeg', .8); } catch
    ====================================================================== */
 /* Wettkampf-Schauplätze: je weiter du bist, desto größer und hochwertiger – am Ende im All */
 Sc.VENUES = ['Hinterhof', 'Vereinsheim', 'Stadthalle', 'Landesarena', 'Nationalarena', 'Europa-Stadion', 'WM-Megastadion', 'Raumstation Orbit'];
+/* Duell-/Turnier-Schauplatz in 3D (Bühne, Ränge, Vorhang, Scheinwerfer, LED-Wand) – Publikum, Lichtstrahlen, LED-Leuchten bleiben 2D und live */
+function venueImg(v, yF) {
+  const S = MK.S, E3 = MK.Env3D; if (!E3 || !S.set.env3d || S.set.quality === 'niedrig') return null;
+  if (E3.state === 'idle' && E3.load) { E3.load(); return null; } if (E3.state !== 'ready' || !E3.getStage) return null;
+  try { return E3.getStage({ v, W, H, yF, py: H - 26, pScale: Math.min(H * .00175, W * .0022), dpr, q: S.set.quality }); } catch (e) { console.error('3D-Bühne:', e); E3.state = 'fail'; return null; }
+}
+function venueLive(v, t, yF, st, img) {
+  let g;
+  const crowdRows = (n, y0, y1, cols, a) => { for (let r = 0; r < n; r++) { const y = lerp(y0, y1, r / Math.max(1, n - 1)), k = .6 + r / n * .6; for (let i = 0; i < W / (12 * k); i++) { const x = i * 12 * k + (r % 2) * 6 * k, bob = (st.cheer ? Math.abs(Math.sin(t * 8 + i + r)) * 3 : 0); c.fillStyle = `rgba(${cols[(i + r) % cols.length]},${a})`; c.beginPath(); c.arc(x, y - bob, 3.4 * k, 0, TAU); c.fill(); c.fillRect(x - 3.5 * k, y + 2 * k - bob, 7 * k, 6 * k); if ((i * 7 + r) % 23 === 0 && Math.sin(t * 4 + i) > .7) { c.fillStyle = 'rgba(255,255,255,.9)'; c.fillRect(x - 1, y - 8 * k, 2, 3); } } } };
+  const beams = (cols, n, sp) => { for (let i = 0; i < n; i++) { const x0 = W * (i + .5) / n, ang = Math.sin(t * sp + i * 1.7) * .5; c.save(); c.translate(x0, 0); c.rotate(ang); g = c.createLinearGradient(0, 0, 0, yF); g.addColorStop(0, `rgba(${cols[i % cols.length]},.35)`); g.addColorStop(1, `rgba(${cols[i % cols.length]},0)`); c.fillStyle = g; c.beginPath(); c.moveTo(-6, 0); c.lineTo(6, 0); c.lineTo(60, yF); c.lineTo(-60, yF); c.fill(); c.restore(); } };
+  if (v === 7) { c.fillStyle = '#05060f'; c.fillRect(0, 0, W, H); for (let i = 0; i < 80; i++) { const x = (i * 97.13 % 1) * W, y = (i * 61.7 % 1) * yF; c.fillStyle = `rgba(255,255,255,${.4 + .4 * Math.sin(t * 2 + i)})`; c.fillRect(x, y, 1.6, 1.6); }
+    const ex = W * .72, ey = yF * 1.05, er = W * .42; g = c.createRadialGradient(ex - er * .3, ey - er * .3, er * .1, ex, ey, er); g.addColorStop(0, '#5fb3ff'); g.addColorStop(.7, '#1d5fbf'); g.addColorStop(1, '#0b2a5a'); c.fillStyle = g; c.beginPath(); c.arc(ex, ey, er, 0, TAU); c.fill(); }
+  c.drawImage(img.cv, 0, 0, W, H);
+  if (v === 0) { g = c.createRadialGradient(W / 2, 30, 4, W / 2, 30, H * .5); g.addColorStop(0, 'rgba(255,230,160,.4)'); g.addColorStop(1, 'rgba(255,230,160,0)'); c.fillStyle = g; c.fillRect(0, 0, W, yF); }
+  if (v === 1) crowdRows(2, yF - 30, yF - 12, ['60,40,30', '90,60,40'], .8);
+  if (v >= 3 && v <= 6) { crowdRows(3 + v, yF * (.62 - v * .06), yF - 10, v === 4 ? ['30,30,30', '200,40,40', '230,190,40'] : v === 5 ? ['40,70,170', '230,200,60', '220,220,230'] : ['120,120,200', '200,120,220', '90,200,230', '230,230,90'], .9);
+    const sw = W * (.28 + v * .03), sx = W / 2 - sw / 2, sy = 14; g = c.createLinearGradient(sx, 0, sx + sw, 0); g.addColorStop(0, '#1e3a8a'); g.addColorStop(.5, '#7c3aed'); g.addColorStop(1, '#0ea5e9'); c.fillStyle = g; c.globalAlpha = .55 + .2 * Math.sin(t * 2); c.fillRect(sx, sy, sw, yF * .32); c.globalAlpha = 1;
+    if (v === 4) { [['#141414', 0], ['#dd0000', 1], ['#ffcc00', 2]].forEach(([col, k]) => { c.fillStyle = col; c.fillRect(8, 20 + k * 10, 34, 10); c.fillRect(W - 42, 20 + k * 10, 34, 10); }); }
+    if (v === 5) for (let i = 0; i < 12; i++) { const a = i / 12 * TAU; c.fillStyle = '#ffcc00'; c.beginPath(); c.arc(W * .1 + Math.cos(a) * 18, 46 + Math.sin(a) * 18, 2.6, 0, TAU); c.fill(); }
+    if (!MK.S.set.reduce) beams(v >= 5 ? ['255,80,200', '80,200,255', '255,230,80', '120,255,160'] : ['255,240,200'], 3 + v, .6 + v * .1);
+    if (v >= 5 && Math.random() < .08) Sc.particle('confetti', rnd(0, W), 0, 6); }
+  if (v === 2 && !MK.S.set.reduce) beams(['255,240,200'], 3, .5);
+  c.fillStyle = '#141414'; c.fillRect(W * .25, 18, W * .5, 34); c.fillStyle = '#ffd23f'; c.font = `${Math.max(16, H * .05)}px Bangers, Impact, sans-serif`; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(st.title || 'WETTKAMPF', W / 2, 36);
+  c.fillStyle = 'rgba(255,255,255,.75)'; c.font = '700 11px Arial'; c.fillText('📍 ' + Sc.VENUES[v], W / 2, 60); c.textBaseline = 'alphabetic';
+  [[.3, '255,240,200'], [.7, '255,240,200']].forEach(([x, col], i) => { const sx = W * x + Math.sin(t * .7 + i) * 20; g = c.createRadialGradient(sx, H - 30, 10, sx, H - 30, H * .55); g.addColorStop(0, `rgba(${col},.28)`); g.addColorStop(1, `rgba(${col},0)`); c.fillStyle = g; c.fillRect(0, 0, W, H); });
+}
 function venueBg(v, t, yF, st) {
+  { const img = venueImg(v, yF); if (img) return venueLive(v, t, yF, st, img); }
   let g;
   const crowdRows = (n, y0, y1, cols, a) => { for (let r = 0; r < n; r++) { const y = lerp(y0, y1, r / Math.max(1, n - 1)), k = .6 + r / n * .6; for (let i = 0; i < W / (12 * k); i++) { const x = i * 12 * k + (r % 2) * 6 * k, bob = (st.cheer ? Math.abs(Math.sin(t * 8 + i + r)) * 3 : 0); c.fillStyle = `rgba(${cols[(i + r) % cols.length]},${a})`; c.beginPath(); c.arc(x, y - bob, 3.4 * k, 0, TAU); c.fill(); c.fillRect(x - 3.5 * k, y + 2 * k - bob, 7 * k, 6 * k); if ((i * 7 + r) % 23 === 0 && Math.sin(t * 4 + i) > .7) { c.fillStyle = 'rgba(255,255,255,.9)'; c.fillRect(x - 1, y - 8 * k, 2, 3); } } } };
   const beams = (cols, n, sp) => { for (let i = 0; i < n; i++) { const x0 = W * (i + .5) / n, ang = Math.sin(t * sp + i * 1.7) * .5; c.save(); c.translate(x0, 0); c.rotate(ang); g = c.createLinearGradient(0, 0, 0, yF); g.addColorStop(0, `rgba(${cols[i % cols.length]},.35)`); g.addColorStop(1, `rgba(${cols[i % cols.length]},0)`); c.fillStyle = g; c.beginPath(); c.moveTo(-6, 0); c.lineTo(6, 0); c.lineTo(60, yF); c.lineTo(-60, yF); c.fill(); c.restore(); } };
