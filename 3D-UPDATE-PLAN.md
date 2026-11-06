@@ -40,7 +40,7 @@ Die 3D-Figur aus dem alten Prototyp wird **nicht** weiterverfolgt.
 - Der Spiegel zeigt weiterhin die 2D-Spiegelung wie bisher.
 - Leon vergleicht 3D/2D und gibt Feedback, bevor Phase 2 startet. ✅ erledigt, Leon ist zufrieden.
 
-## Phase 2 – Alle Gym-Stufen
+## Phase 2 – Alle Gym-Stufen ✅
 - Jede Gym-Stufe als eigener Raum mit eigener Stimmung (vom einfachen Vereinsgym bis zum Luxus-Gym).
 - Beim Gym-Wechsel: kurze, weiche Überblendung.
 - Gekaufte Geräte aus dem Gym-Shop erscheinen als 3D-Geräte im Raum – der Raum füllt sich sichtbar mit dem Fortschritt.
@@ -48,27 +48,27 @@ Die 3D-Figur aus dem alten Prototyp wird **nicht** weiterverfolgt.
 - Hantelscheiben im Rack passend zur aktuellen Gewichtsstufe; neue Scheiben kurz mit Gold-Glanz.
 - Poster an der Wand, die sich mit Erfolgen ändern (z. B. besiegter Rivale, Rekord).
 
-## Phase 3 – Bühnen & Theken
+## Phase 3 – Bühnen & Theken ✅
 - Duell-Arena und Turnierbühne in 3D mit Scheinwerfern, Vorhang und Publikumsrängen (Publikum bleibt 2D).
 - Labor als 3D-Raum mit Kolben und Geräten.
 - Theken (Bar/Shake-Bar, Shop, Labor-Tresen usw.) als 3D mit Vordergrund-Ebene, damit 2D-NPCs **hinter** der Theke stehen.
 - Alles, was man anklicken kann (Kühlschrank, Boombox …), behält seine Klickflächen – auch auf dem Handy wie im Branch `verbesserungen` gelöst.
 
-## Phase 4 – Licht & Atmosphäre
+## Phase 4 – Licht & Atmosphäre ✅
 - Tageszeit nach echter Uhrzeit: Licht durch die Fenster, abends Lampen an, nachts Neon.
 - Genau **ein** Mond bzw. **eine** Sonne, an der richtigen Stelle im richtigen Fenster.
 - Beast-Modus: Raumlicht färbt sich, kurzes Aufleuchten.
 - Kauf neuer Geräte: kurzer Glanz im Raum.
 - Live-Details nur bei Grafik „hoch“: Neonröhre flackert, Staub im Fensterlicht, Boombox wippt zur Musik, Kabelzug schwingt leicht.
 
-## Phase 4b – Imperium in 3D
+## Phase 4b – Imperium in 3D ✅
 - Die Stadt oben wird eine isometrische 3D-Mini-Stadt: jedes Geschäft ist ein eigenes Gebäude, das mit dem Ausbau wächst (Bude → Laden → Hochhaus) und beim Kauf kurz „hochploppt“.
 - Autos fahren, abends gehen Lichter an, Tag/Nacht nach echter Uhrzeit.
 - Zoom-Stufen wie bisher (Block → Stadt → Land → Erde → All) mit weichen Kamerafahrten.
 - Übergang Gym → Imperium als kurze Kamerafahrt aus dem Gym-Fenster über die Stadt.
 - Figur und NPCs bleiben 2D; Leistung: Stadt nur rendern, wenn sichtbar, auf dem Handy mit reduzierter Auflösung.
 
-## Phase 5 – Feinschliff & Leistung
+## Phase 5 – Feinschliff & Leistung ✅
 - Grafik-Stufen:
   - hoch: Live-Effekte, volle Auflösung
   - mittel: nur vorgerendert

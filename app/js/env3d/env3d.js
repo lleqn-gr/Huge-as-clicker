@@ -27,6 +27,8 @@ export function boot() {
   try { R = new THREE.WebGLRenderer({ canvas: cv, antialias: true, alpha: true, powerPreference: 'low-power' }); }
   catch (e) { E.state = 'fail'; E.err = 'WebGL nicht verfügbar'; throw e; }
   R.setClearColor(0x000000, 0); R.shadowMap.enabled = true; R.shadowMap.type = THREE.PCFShadowMap;
+  // Grafikkarte nimmt den 3D-Zugang weg (z. B. Handy im Hintergrund) → sauber zurück auf 2D
+  cv.addEventListener('webglcontextlost', e => { e.preventDefault(); E.state = 'fail'; E.err = 'WebGL-Kontext verloren'; console.warn('3D-Umgebung: WebGL-Kontext verloren – 2D aktiv'); });
   scene = new THREE.Scene(); cam = new THREE.PerspectiveCamera(40, 1, .1, 80);
   E.get = get; E.has = gym => gym >= 0 && gym <= 4; E.state = 'ready';
   E._dbg = { THREE, R, scene, cam };
@@ -79,6 +81,8 @@ const CACHE = {};
 function render(type, key, L, C, build) {
   const ca = CACHE[type] || (CACHE[type] = { key: '', res: null, cv: {} });
   if (ca.key === key && ca.res) return ca.res;
+  // Speicher sparen: Bilder von Bühne/Labor freigeben, wenn gerade etwas anderes gebraucht wird (das Gym bleibt)
+  Object.entries(CACHE).forEach(([k, o]) => { if (k !== type && k !== 'gym' && o.res) { Object.values(o.cv).forEach(c => { c.width = c.height = 0; }); o.res = null; o.key = ''; } });
   const t0 = performance.now();
   if (room) { scene.remove(room); room.traverse(o => { if (o.geometry && !SHARED.has(o.geometry) && !o.userData.outline && o.geometry.type !== 'LatheGeometry') o.geometry.dispose(); }); }
   room = new THREE.Group(); const B = build(); room.add(B.bg); if (B.eq) room.add(B.eq); if (B.front) room.add(B.front); B.lights(room); scene.add(room);
@@ -94,6 +98,7 @@ function render(type, key, L, C, build) {
   const a = B.anchors || {}; if (a.trophies) a.trophies = a.trophies.map(p => Object.assign(toScreen(C, p.x, p.y, p.z), { r: p.r * C.f / -p.z }));
   ca.key = key; ca.res = Object.assign(out, { win: B.wins || [], key: type + key, anchors: a });
   E.stats = { type, ms: Math.round(performance.now() - t0), calls: R.info.render.calls, tris: R.info.render.triangles, cam: C };
+  if (E.stats.ms > 1500 && !E.slow) { E.slow = true; console.warn('3D-Umgebung: Gerät zu langsam (' + E.stats.ms + ' ms) – 2D aktiv'); try { MK.UI.toast('3D ist auf diesem Gerät zu langsam – Umgebung läuft in 2D'); } catch (e) { } }
   return ca.res;
 }
 E.wx = wx; E.wy = wy;

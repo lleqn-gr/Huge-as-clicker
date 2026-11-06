@@ -116,7 +116,7 @@ const SCN = {};
 function scene(kind) {
   { const E3 = MK.Env3D, S = MK.S; // Labor als 3D-Raum (Option „Umgebung 3D“), sonst wie bisher 2D
     if (E3 && S.set.env3d && S.set.quality !== 'niedrig' && (kind === 'lab' || kind === 'med')) { if (E3.state === 'idle' && E3.load) E3.load();
-      if (E3.state === 'ready' && E3.getLab) { let r = null; try { r = E3.getLab({ kind, W: Wd, H: Hd, dpr, q: S.set.quality }); } catch (e) { console.error('3D-Labor:', e); }
+      if (E3.state === 'ready' && !E3.slow && E3.getLab) { let r = null; try { r = E3.getLab({ kind, W: Wd, H: Hd, dpr, q: S.set.quality }); } catch (e) { console.error('3D-Labor:', e); }
         if (r) { cx.fillStyle = '#c9d3d6'; cx.fillRect(0, 0, Wd, Hd); cx.drawImage(r.cv, 0, 0, Wd, Hd); return; } } } }
   const key = kind + Wd + 'x' + Hd + dpr; let c2 = SCN[key];
   if (!c2) { c2 = document.createElement('canvas'); c2.width = cvs.width; c2.height = cvs.height; const o = cx; cx = c2.getContext('2d'); cx.setTransform(dpr, 0, 0, dpr, 0, 0); drawScene(kind); cx = o; SCN[key] = c2; }

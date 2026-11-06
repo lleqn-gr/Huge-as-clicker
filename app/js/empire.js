@@ -329,7 +329,7 @@ function ticker(c, W, y, h, dt) {
    Höchstens 30 Bilder/s; dazwischen wird das letzte Bild wiederverwendet. Beim Betreten: Kamerafahrt aus dem Gym-Fenster. */
 function city3d(c, x0, y0, W, H, st) {
   const E3 = MK.Env3D, S = MK.S; if (!E3 || !S.set.env3d || S.set.quality === 'niedrig') return false;
-  if (E3.state === 'idle' && E3.load) { E3.load(); return false; } if (E3.state !== 'ready' || !E3.city) return false;
+  if (E3.state === 'idle' && E3.load) { E3.load(); return false; } if (E3.state !== 'ready' || E3.slow || !E3.city) return false;
   const now = performance.now(), enter = now - (E.last3d || -1e9) > 1200; E.last3d = now;
   const cv = E.cityCv || (E.cityCv = document.createElement('canvas'));
   if (enter || now - (E.city3dT || 0) > (S.set.quality === 'hoch' ? 33 : 50) || cv.width === 0) {

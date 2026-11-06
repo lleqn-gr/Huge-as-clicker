@@ -428,7 +428,7 @@ function neonSigns(t, G) { const S = MK.S; if (S.gym < 2) return; const bk = Sc.
 function env3dFor(G) {
   const S = MK.S, E3 = MK.Env3D; if (!E3 || !S.set.env3d || S.set.quality === 'niedrig') return null;
   if (E3.state === 'idle' && E3.load) { E3.load(); return null; }
-  if (E3.state !== 'ready' || !E3.has(S.gym)) return null;
+  if (E3.state !== 'ready' || E3.slow || !E3.has(S.gym)) return null;
   const p = Sc.dayPhase();
   const tod = p < .2 ? 'morgen' : p < .55 ? 'tag' : p < .72 ? 'abend' : 'nacht'; // Licht im 3D-Raum nach echter Uhrzeit
   try { return E3.get({ gym: S.gym, W, H, yF: G.yF, py: G.py, pScale: G.pScale, dpr, q: S.set.quality, tod }); }
@@ -1997,7 +1997,7 @@ Sc.VENUES = ['Hinterhof', 'Vereinsheim', 'Stadthalle', 'Landesarena', 'Nationala
 /* Duell-/Turnier-Schauplatz in 3D (Bühne, Ränge, Vorhang, Scheinwerfer, LED-Wand) – Publikum, Lichtstrahlen, LED-Leuchten bleiben 2D und live */
 function venueImg(v, yF) {
   const S = MK.S, E3 = MK.Env3D; if (!E3 || !S.set.env3d || S.set.quality === 'niedrig') return null;
-  if (E3.state === 'idle' && E3.load) { E3.load(); return null; } if (E3.state !== 'ready' || !E3.getStage) return null;
+  if (E3.state === 'idle' && E3.load) { E3.load(); return null; } if (E3.state !== 'ready' || E3.slow || !E3.getStage) return null;
   try { return E3.getStage({ v, W, H, yF, py: H - 26, pScale: Math.min(H * .00175, W * .0022), dpr, q: S.set.quality }); } catch (e) { console.error('3D-Bühne:', e); E3.state = 'fail'; return null; }
 }
 function venueLive(v, t, yF, st, img) {
