@@ -100,7 +100,7 @@ const EQDRAW = {
     const S = MK.S, on = S.music.on, m = mat('boombox'), K = k * 1.75, st = Sc._boomOnBar ? 0 : 26 * k, by = y - st, song = MK.MUSIC.find(z => z.id === S.music.cur) || MK.MUSIC[0];
     if (st) { c.fillStyle = '#3a3c42'; c.fillRect(x - 18 * k, y - st, 36 * k, 4 * k); c.fillRect(x - 15 * k, y - st, 4 * k, st); c.fillRect(x + 11 * k, y - st, 4 * k, st); }
     const beat = on ? Math.max(0, Math.sin(t * song.bpm / 60 * Math.PI)) : 0, pulse = 1 + beat * .14;
-    c.save(); c.translate(x, by); c.scale(1 + beat * .02, 1 - beat * .02);
+    c.save(); c.translate(x, by - (liveFx() ? beat * beat * 3.5 * k : 0)); c.scale(1 + beat * .02, 1 - beat * .02);
     c.fillStyle = '#26262c'; c.strokeStyle = '#111'; c.lineWidth = 1.5; c.beginPath(); c.roundRect(-26 * K, -26 * K, 52 * K, 26 * K, 4 * K); c.fill(); c.stroke();
     c.strokeStyle = m.a; c.lineWidth = 2.6 * K; c.beginPath(); c.moveTo(-16 * K, -26 * K); c.lineTo(-13 * K, -33 * K); c.lineTo(13 * K, -33 * K); c.lineTo(16 * K, -26 * K); c.stroke();
     [-1, 1].forEach(s2 => { circ(s2 * 14 * K, -12 * K, 8.5 * K * pulse, '#0e0e10'); circ(s2 * 14 * K, -12 * K, 5.5 * K * pulse, '#3a3c42'); circ(s2 * 14 * K, -12 * K, 2.5 * K, m.a); });
@@ -353,6 +353,7 @@ function lightRig(st, t, G) {
     (Sc.windows() || []).forEach(w => { const [x, y, ww, hh] = w, g = c.createLinearGradient(0, y, 0, fy); g.addColorStop(0, `rgba(${col},${a * .55})`); g.addColorStop(.7, `rgba(${col},${a * .25})`); g.addColorStop(1, `rgba(${col},${a * .5})`);
       c.fillStyle = g; c.beginPath(); c.moveTo(x, y + hh * .1); c.lineTo(x + ww, y + hh * .1); c.lineTo(x + ww + sl, fy); c.lineTo(x + sl, fy); c.closePath(); c.fill();
       const pg = c.createLinearGradient(0, yF + 6, 0, fy + 18); pg.addColorStop(0, `rgba(${col},0)`); pg.addColorStop(.5, `rgba(${col},${a * 1.1})`); pg.addColorStop(1, `rgba(${col},0)`); c.fillStyle = pg;
+      if (liveFx()) for (let i = 0; i < 9; i++) { const u = (i * .618 + t * .012 * (1 + i % 3)) % 1, v = (i * .381 + t * .025) % 1, mx = x + ww * u + sl * v + Math.sin(t * .8 + i) * 4, my = y + hh * .1 + v * (fy - y - hh * .1); c.fillStyle = `rgba(${col},${a * 2.2 * Math.sin(v * Math.PI)})`; c.fillRect(mx, my, 1.6, 1.6); }
       c.beginPath(); c.moveTo(x + sl * .78, yF + 6); c.lineTo(x + ww + sl * .78, yF + 6); c.lineTo(x + ww + sl * 1.15, fy + 18); c.lineTo(x + sl * 1.15, fy + 18); c.closePath(); c.fill(); }); }
   srcs.forEach(s => { // Lichtkegel
     const bx = s.x + (s.sway || 0), half = W * s.cone * .5, g = c.createLinearGradient(0, s.y, 0, yF + 40); g.addColorStop(0, `rgba(${s.col},${s.spot ? .16 : .1})`); g.addColorStop(1, `rgba(${s.col},0)`);
@@ -415,7 +416,9 @@ function contactShadow(x, y, rx, ry, a) { const g = c.createRadialGradient(x, y,
 /* Hintergrund-Cache: Wand, Boden, Möbel werden einmal vorgezeichnet. Pro Bild kommen nur Fenster (Wetter/Tageszeit), Neon und Vitrine dazu. */
 const BGC = { key: '', cv: null, win: [] }; let WINQ = null;
 function win(...a) { if (WINQ) WINQ.push(a); else drawWindow(...a); }
-function neonSigns(t, G) { const S = MK.S; if (S.gym < 2) return; const bk = Sc.vis.beastK || 0, fl = bk > .3 && Math.sin(t * 31) > .2 ? .4 : 1;
+const liveFx = () => MK.S.set.quality === 'hoch' && !MK.S.set.reduce; // kleine Live-Details nur bei Grafik „hoch“
+const neonFlick = (t, seed) => liveFx() && Math.sin(t * .37 + seed) > .985 && Math.sin(t * 53 + seed * 7) > -.2 ? .18 : 1;
+function neonSigns(t, G) { const S = MK.S; if (S.gym < 2) return; const bk = Sc.vis.beastK || 0, fl = bk > .3 && Math.sin(t * 31) > .2 ? .4 : neonFlick(t, S.gym);
   c.save(); c.globalAlpha = fl;
   if (S.gym === 2) neonText('24/7', W * .82, 104, Math.max(16, H * .045), '255,79,184', t, 2);
   if (S.gym === 3) { neonText('NO EXCUSES', W * .5, G.yF * .53, Math.max(18, H * .07), '255,60,60', t, 5); neonText('♥', W * .5 + Math.max(18, H * .07) * 3.6, G.yF * .53, Math.max(14, H * .05), '255,60,60', t * 1.3, 9); }
@@ -427,7 +430,8 @@ function env3dFor(G) {
   if (E3.state === 'idle' && E3.load) { E3.load(); return null; }
   if (E3.state !== 'ready' || !E3.has(S.gym)) return null;
   const p = Sc.dayPhase();
-  try { return E3.get({ gym: S.gym, W, H, yF: G.yF, py: G.py, pScale: G.pScale, dpr, q: S.set.quality, night: p > .72 && p < .97 }); }
+  const tod = p < .2 ? 'morgen' : p < .55 ? 'tag' : p < .72 ? 'abend' : 'nacht'; // Licht im 3D-Raum nach echter Uhrzeit
+  try { return E3.get({ gym: S.gym, W, H, yF: G.yF, py: G.py, pScale: G.pScale, dpr, q: S.set.quality, tod }); }
   catch (e) { console.error('3D-Umgebung:', e); E3.state = 'fail'; return null; }
 }
 function drawGym(t) {
@@ -435,6 +439,9 @@ function drawGym(t) {
   BGC.gymSeen = MK.S.gym;
   const S = MK.S, G = Sc.geo(), st = GYMSTYLE[S.gym], env = env3dFor(G), key = env ? env.key : [S.gym, W, H, Math.round(G.yF), dpr, S.fame > 40 ? 1 : 0].join(':');
   Sc.env3dOn = !!env; Sc._env = env; // env.cv = Raum, env.eq = Geräte-Ebene, env.front = Tresen-Ebene
+  if (env) { const sig = env.anchors.eq.map(a => a.id + ':' + a.lv); // neues/verbessertes Gerät im selben Raum → kurzer Glanz
+    if (BGC.eqSig && BGC.eqGym === S.gym && BGC.eqSig.join() !== sig.join()) { const neu = env.anchors.eq.filter(a => !BGC.eqSig.includes(a.id + ':' + a.lv)).map(a => a.id); if (neu.length) Sc.vis.eqGlow = { ids: neu, t0: performance.now() }; }
+    BGC.eqSig = sig; BGC.eqGym = S.gym; }
   if (BGC.key !== key) { if (env) { BGC.cv = env.cv; BGC.win = env.win; BGC.sky = null; }
     else { const [cv2, x2] = texCanvas(W, H), c0 = c; c = x2; WINQ = []; try { drawGymStatic(t); } finally { BGC.win = WINQ; BGC.sky = null; WINQ = null; c = c0; } BGC.cv = cv2; }
     BGC.key = key; }
@@ -458,6 +465,10 @@ MK.on && MK.on('wg', d => { Sc.vis.rackGlow = { t0: performance.now(), g: d.g };
 function envFx(env, t) {
   const A = env.anchors; if (!A || MK.S.set.reduce) return;
   A.trophies.forEach((a, i) => { const s = Math.sin(t * 2 + i * 1.7); if (s > .9) star4(a.x - a.r * .15, a.y - a.r * .1, (s - .9) * 30 + 1, `rgba(255,255,255,${(s - .9) * 9})`); });
+  const eg = Sc.vis.eqGlow; if (eg) { const age = (performance.now() - eg.t0) / 1000; if (age > 2.2) Sc.vis.eqGlow = null; else { const k = (age < .2 ? age / .2 : 1) * (age > 1.4 ? (2.2 - age) / .8 : 1);
+    c.save(); c.globalCompositeOperation = 'lighter'; A.eq.filter(a => eg.ids.includes(a.id)).forEach(a => { const x0 = a.x - 6 + (a.w + 12) * ((age * .9) % 1); // Glanzstreifen läuft über das neue Gerät
+      const g = c.createLinearGradient(x0 - 20, 0, x0 + 20, 0); g.addColorStop(0, 'rgba(255,255,230,0)'); g.addColorStop(.5, `rgba(255,250,220,${.6 * k})`); g.addColorStop(1, 'rgba(255,255,230,0)'); c.fillStyle = g; c.fillRect(a.x, a.y, a.w, a.h);
+      for (let i = 0; i < 3; i++) star4(a.x + a.w * (.2 + i * .3), a.y + a.h * (.25 + (i % 2) * .3), 3 + Math.sin(t * 9 + i) * 1.5, `rgba(255,255,255,${k})`); }); c.restore(); } }
   const rg = Sc.vis.rackGlow; if (!rg) return; const age = (performance.now() - rg.t0) / 1000; if (age > 3) { Sc.vis.rackGlow = null; return; }
   const k = (age < .25 ? age / .25 : 1) * (age > 2.2 ? (3 - age) / .8 : 1), PL = { hanteln: 1, langhantel: 1, rack: 1, hack: 1, farmer: 1, tbar: 1, szstange: 1, plattform: 1 };
   const hit = A.eq.filter(a => PL[a.id] && (MK.EXERCISES.some(e => e.eq === a.id && e.g === rg.g) || a.id === 'hanteln'));
@@ -661,7 +672,12 @@ function drawEquipment(t) {
   const G = Sc.geo(), k = G.bg * .9;
   // drei Tiefen (Wand, Raummitte, vorne), hinten zuerst – und nie hinter der Theke: rechter Rand endet vor ihr
   const L = eqLayout(), DY = [-8, 10, 27], DS = [.8, .92, 1.04], barL = MK.S.eq.kuehl ? (Sc.barX0 || W * .66) - 8 * k : W + 999;
-  if (Sc.env3dOn && Sc._env && Sc._env.eq) c.drawImage(Sc._env.eq, 0, 0, W, H); // 3D-Geräte als eigene Ebene, vor dem Spiegel
+  if (Sc.env3dOn && Sc._env && Sc._env.eq) { c.drawImage(Sc._env.eq, 0, 0, W, H); // 3D-Geräte als eigene Ebene, vor dem Spiegel
+    // Kabelzug: Seil + Griff live, schwingen leicht (Grafik „hoch“), sonst ruhig
+    const sw = MK.S.set.quality === 'hoch' && !MK.S.set.reduce, tt = performance.now() / 1000;
+    Sc._env.anchors.eq.forEach((a, j) => (a.cables || []).forEach((q, i) => { const an = sw ? Math.sin(tt * 1.3 + i * 2.1 + j) * .07 + Math.sin(tt * 2.9 + j) * .025 : 0, ex = q.x + Math.sin(an) * q.len, ey = q.y + Math.cos(an) * q.len, hw = Math.max(3, q.len * .09);
+      c.strokeStyle = '#141414'; c.lineWidth = Math.max(1, q.len * .012); c.beginPath(); c.moveTo(q.x, q.y); c.lineTo(ex, ey); c.stroke();
+      c.save(); c.translate(ex, ey); c.rotate(-an); c.fillStyle = '#1d1f24'; c.strokeStyle = '#141414'; c.lineWidth = 1.2; c.beginPath(); c.roundRect(-hw, 0, hw * 2, hw * .7, hw * .3); c.fill(); c.stroke(); c.fillStyle = '#d83a32'; c.fillRect(-hw * .6, hw * .15, hw * 1.2, hw * .3); c.restore(); })); }
   if (!Sc.env3dOn) Object.keys(L).sort((a, b) => L[a].d - L[b].d).forEach(id => { /* mit 3D-Umgebung stehen die Geräte als 3D-Modelle im Raum */ const d = L[id].d, kk = k * DS[d], y = G.yF + DY[d], x = Math.min(L[id].x * W, barL - 62 * kk); contactShadow(x, y + 1, 52 * kk, 7 * kk, .45); EQDRAW[id](x, y, kk, t); });
   if (MK.S.eq.kuehl) drawBar(G, k, t); else if (MK.S.eq.boombox) { Sc._boomOnBar = false; EQDRAW.boombox(FIXED.boombox * W, G.yF + 6, k, t); }
 }

@@ -50,23 +50,27 @@ const wx = (C, sx, z) => (sx - C.W / 2) * z / C.f, wy = (C, sy, z) => C.h + (C.c
 const toScreen = (C, x, y, z) => ({ x: C.W / 2 + x * C.f / -z, y: C.cy + (C.h - y) * C.f / -z });
 
 /* ---------- Licht je Raum ---------- */
-function lights(g, C, gym, night) {
-  const [amb, keyI, keyC] = roomInfo(gym).mood, n = night ? .72 : 1;
-  g.add(new THREE.HemisphereLight(night ? '#a8b4e0' : '#fff4e2', night ? '#3a2c22' : '#6a4a30', amb * n));
+// Tageszeit: morgens warm, mittags neutral, abends orange, nachts bläulich (Lampen an, Raum dunkler)
+const TOD = { morgen: ['#ffe6cc', .95, '#ffd0a0', .9], tag: ['#fff4e2', 1, null, 1], abend: ['#ffd2b0', .85, '#ffae70', .9], nacht: ['#a8b4e0', .72, '#ffe2b8', .8] };
+function lights(g, C, gym, tod) {
+  const [amb, keyI, keyC0] = roomInfo(gym).mood, T = TOD[tod] || TOD.tag, night = tod === 'nacht', keyC = T[2] || keyC0;
+  g.add(new THREE.HemisphereLight(T[0], night ? '#3a2c22' : '#6a4a30', amb * T[1]));
   // Hauptlicht von vorne links oben (wie bei der 2D-Figur) → Schatten fallen nach hinten rechts
-  const key = new THREE.DirectionalLight(keyC, keyI * (night ? .8 : 1)); key.position.set(-4, C.h + 6, 4); key.target.position.set(0, 0, -C.zw); g.add(key, key.target);
+  const key = new THREE.DirectionalLight(keyC, keyI * T[3]); key.position.set(-4, C.h + 6, 4); key.target.position.set(0, 0, -C.zw); g.add(key, key.target);
   key.castShadow = true; key.shadow.mapSize.set(2048, 2048); key.shadow.bias = -.0005; key.shadow.normalBias = .02;
   const sc = key.shadow.camera, ext = C.zw * .95; Object.assign(sc, { left: -ext, right: ext, top: ext, bottom: -ext, near: 1, far: C.zw * 3 }); sc.updateProjectionMatrix();
   const back = new THREE.DirectionalLight(night ? '#6d84c8' : '#cfe6ff', night ? .25 : .5); back.position.set(1, C.h + 2, -C.zw - 6); g.add(back);
 }
 
+/* Kabelzug-Griffe schwingen live (2D): die Geräte markieren ihre Umlenkrolle, hier in Bildschirm-Punkte umrechnen */
+function cablesOf(eq, C) { const out = []; eq.updateMatrixWorld(true); eq.traverse(o => { if (o.userData.pulley) { const p = new THREE.Vector3().setFromMatrixPosition(o.matrixWorld), q = toScreen(C, p.x, p.y, p.z); out.push({ x: q.x, y: q.y, len: o.userData.pulley * C.f / -p.z }); } }); return out; }
 /* ---------- Geräte an den Stellplätzen aus scene.js ---------- */
 function placeEquip(g, C, places, anchors) {
   places.forEach(p => { const eq = buildEquip(p.id, frameMat(p.lv), p.wg, p.lv); if (!eq) return;
     let z = C.f * C.h / Math.max(1, p.sy - C.cy); z = clamp(z, C.d + 1.2, C.zw - .55); // Tiefe aus der Bodenzeile; nie in der Wand
     eq.position.set(wx(C, p.sx, z), 0, -z); g.add(eq);
     const b = new THREE.Box3().setFromObject(eq), pts = [[b.min.x, b.min.y, b.max.z], [b.max.x, b.min.y, b.max.z], [b.min.x, b.max.y, b.max.z], [b.max.x, b.max.y, b.max.z]].map(q => toScreen(C, ...q));
-    const xs = pts.map(q => q.x), ys = pts.map(q => q.y); anchors.eq.push({ id: p.id, x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) }); });
+    const xs = pts.map(q => q.x), ys = pts.map(q => q.y); anchors.eq.push({ id: p.id, lv: p.lv, wg: p.wg, cables: cablesOf(eq, C), x: Math.min(...xs), y: Math.min(...ys), w: Math.max(...xs) - Math.min(...xs), h: Math.max(...ys) - Math.min(...ys) }); });
 }
 
 /* ---------- Rendern: Raum-Bild + eigene Ebenen (Geräte, Vordergrund/Theke), je Szenen-Art ein Cache ---------- */
@@ -96,12 +100,12 @@ E.wx = wx; E.wy = wy;
 /* ---------- Gym ---------- */
 function get(L) {
   if (E.state !== 'ready' || !E.has(L.gym)) return null;
-  const S = MK.S, night = !!L.night, places = (MK.Scene.eqPlaces && MK.Scene.eqPlaces()) || [], bar = S.eq.kuehl && MK.Scene.barGeom ? MK.Scene.barGeom() : null;
-  const key = [L.gym, L.W, L.H, Math.round(L.yF), Math.round(L.py), L.pScale.toFixed(4), L.dpr, L.q, night ? 1 : 0, S.eq.kuehl || 0, S.fame > 40 ? 1 : 0, S.fame >= 10 ? 1 : 0,
+  const S = MK.S, tod = L.tod || (L.night ? 'nacht' : 'tag'), places = (MK.Scene.eqPlaces && MK.Scene.eqPlaces()) || [], bar = S.eq.kuehl && MK.Scene.barGeom ? MK.Scene.barGeom() : null;
+  const key = [L.gym, L.W, L.H, Math.round(L.yF), Math.round(L.py), L.pScale.toFixed(4), L.dpr, L.q, tod, S.eq.kuehl || 0, S.fame > 40 ? 1 : 0, S.fame >= 10 ? 1 : 0,
     places.map(p => p.id + p.lv + '.' + p.wg + '@' + Math.round(p.sx) + ',' + Math.round(p.sy)).join(';'), MK.TOURNEYS.map(T => S.trophies[T.id] || 0).join(''), posterList().map(p => p.id + p.t2).join('|')].join(':');
   const C = camFrom(L);
   return render('gym', key, L, C, () => { const anchors = { eq: [], trophies: [] }, B = buildRoom(L.gym, C, L, wx, wy, anchors, bar), eq = new THREE.Group(); placeEquip(eq, C, places, anchors);
-    return { bg: B.g, eq, front: B.front, wins: B.wins, anchors, lights: g => lights(g, C, L.gym, night) }; });
+    return { bg: B.g, eq, front: B.front, wins: B.wins, anchors, lights: g => lights(g, C, L.gym, tod) }; });
 }
 
 /* ---------- Duell-/Turnier-Bühne ----------

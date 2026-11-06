@@ -16,6 +16,8 @@ function barbell(g, x, y, z, len, wg, met) {
   [-1, 1].forEach(s => { for (let i = 0; i < n; i++) { const r = .2 - i * .025; plate(g, pc(Math.max(0, wg - i * 3)), x + s * (len / 2 - .18 - i * .065), y, z, r, .055); } cyl(g, met, x + s * (len / 2 - .05), y, z, .035, .12, 'x', .5); });
 }
 
+// Umlenkrolle: Seil + Griff zeichnet scene.js live (schwingt leicht)
+const pulley = (g, x, y, z, len) => { const m = new THREE.Object3D(); m.position.set(x, y, z); m.userData.pulley = len; g.add(m); };
 export const EQ3 = {
   hanteln(g, F, wg) { // Hantelablage, Kurzhanteln werden mit der Gewichtsstufe größer und mehr
     const w = 1.5; [-1, 1].forEach(s => box(g, F, s * w / 2, .4, 0, .07, .8, .45));
@@ -47,7 +49,7 @@ export const EQ3 = {
   },
   kabel(g, F) { // Kabelzug-Station (zwei Türme)
     [-1, 1].forEach(s => { box(g, F, s * .7, 1.2, 0, .14, 2.4, .14); box(g, tm('#9aa3ad'), s * .7, .45, .1, .12, .6, .06); for (let i = 0; i < 5; i++) box(g, tm('#1d1f24'), s * .7, .2 + i * .1, .14, .14, .07, .04, 0);
-      cyl(g, tm('#c9d0d8'), s * .7, 2.2, .12, .06, .05, 'z', .5); tube(g, tm('#141414'), [[s * .7, 2.2, .15], [s * .58, 1.6, .2], [s * .48, 1.05, .24]], .008); ball(g, tm('#1d1f24'), s * .47, 1.02, .25, .05, .6); });
+      cyl(g, tm('#c9d0d8'), s * .7, 2.2, .12, .06, .05, 'z', .5); pulley(g, s * .7, 2.17, .16, 1.1); });
     box(g, F, 0, 2.42, 0, 1.55, .1, .12); box(g, F, 0, .03, 0, 1.6, .06, .5);
   },
   rack(g, F, wg) { // Kniebeugen-Rack mit Langhantel
@@ -92,7 +94,7 @@ export const EQ3 = {
   },
   seilzug(g, F) { // einzelner Seilzug-Turm mit Griff
     box(g, F, 0, 1.15, 0, .5, 2.3, .14); box(g, tm('#9aa3ad'), 0, .5, .1, .3, .7, .06); for (let i = 0; i < 6; i++) box(g, tm('#1d1f24'), 0, .2 + i * .1, .14, .34, .07, .04, 0);
-    cyl(g, tm('#c9d0d8'), 0, 1.4, .12, .06, .05, 'z', .5); tube(g, tm('#141414'), [[0, 1.4, .15], [.05, 1.15, .22], [.1, 1, .25]], .008); box(g, tm('#d83a32'), .1, .97, .26, .14, .04, .05, .6);
+    cyl(g, tm('#c9d0d8'), 0, 1.4, .12, .06, .05, 'z', .5); pulley(g, 0, 1.37, .16, .45);
     box(g, F, 0, .03, 0, .7, .06, .5);
   },
   trizepsbank(g, F, wg, lv) { // Curl-/Trizepsbank mit Schrägpolster
