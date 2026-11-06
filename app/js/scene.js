@@ -125,6 +125,10 @@ const EQDRAW = {
   reifen(x, y, k) { ell(x, y - 46 * k, 18 * k, 46 * k, '#1a1a1c'); ell(x, y - 46 * k, 10 * k, 30 * k, '#2a2a2e'); c.strokeStyle = 'rgba(255,255,255,.08)'; c.lineWidth = 2 * k; for (let i = 0; i < 8; i++) { c.beginPath(); c.moveTo(x - 16 * k, y - (14 + i * 9) * k); c.lineTo(x - 11 * k, y - (14 + i * 9) * k); c.stroke(); } }
 };
 /* Gewichtsstufe der Muskelgruppe(n), die ein Gerät benutzen → Scheiben am Gerät wachsen mit den Upgrades */
+/* für die 3D-Umgebung: Gerät-Stellplätze genau wie in 2D (x-Anteil, Tiefe 0/1/2 → y = yF + DY[d]) */
+Sc.eqPlaces = () => { const L = eqLayout(), G = Sc.geo(), k = G.bg * .9, DY = [-8, 10, 27], DS = [.8, .92, 1.04], barL = MK.S.eq.kuehl ? (Sc.barX0 || W * .66) - 8 * k : W + 999;
+  return Object.keys(L).map(id => { const d = L[id].d, kk = k * DS[d]; return { id, sx: Math.min(L[id].x * W, barL - 62 * kk), sy: G.yF + DY[d], d, lv: MK.S.eq[id] || 1, wg: wgEq(id) }; }); };
+Sc.wgEq = id => wgEq(id);
 function wgEq(id) { const gs = [...new Set(MK.EXERCISES.filter(e => e.eq === id).map(e => e.g))]; return gs.length ? Math.max(...gs.map(g => MK.wg ? MK.wg(g) : 1)) : Math.max(1, MK.S.wset || 1); }
 function stackW(x, yTop, yBot, k, n) { // Gewichtsblock im Hintergrund: dicke schwarze Platten, eckig mit leicht runden Ecken
   const N = 9, ph = 6.4 * k, gap = 1.1 * k, w = 24 * k, nn = Math.max(1, Math.min(N, n));
@@ -427,8 +431,10 @@ function env3dFor(G) {
   catch (e) { console.error('3D-Umgebung:', e); E3.state = 'fail'; return null; }
 }
 function drawGym(t) {
+  if (BGC.gymSeen != null && BGC.gymSeen !== MK.S.gym && BGC.cv && !MK.S.set.reduce) { const f = BGC.fade && BGC.fade.cv || document.createElement('canvas'); f.width = BGC.cv.width; f.height = BGC.cv.height; f.getContext('2d').drawImage(BGC.cv, 0, 0); BGC.fade = { cv: f, t0: performance.now() }; }
+  BGC.gymSeen = MK.S.gym;
   const S = MK.S, G = Sc.geo(), st = GYMSTYLE[S.gym], env = env3dFor(G), key = env ? env.key : [S.gym, W, H, Math.round(G.yF), dpr, S.fame > 40 ? 1 : 0].join(':');
-  Sc.env3dOn = !!env;
+  Sc.env3dOn = !!env; Sc._env = env;
   if (BGC.key !== key) { if (env) { BGC.cv = env.cv; BGC.win = env.win; BGC.sky = null; }
     else { const [cv2, x2] = texCanvas(W, H), c0 = c; c = x2; WINQ = []; try { drawGymStatic(t); } finally { BGC.win = WINQ; BGC.sky = null; WINQ = null; c = c0; } BGC.cv = cv2; }
     BGC.key = key; }
@@ -439,10 +445,26 @@ function drawGym(t) {
     c.drawImage(BGC.cv, 0, 0, W, H); }
   else { c.drawImage(BGC.cv, 0, 0, W, H);
     BGC.win.forEach(a => drawWindow(a[0], a[1], a[2], a[3], t, a[5], BGC.sky)); }
+  if (env) envFx(env, t);
+  // Gym-Wechsel: altes Bild blendet weich aus
+  if (BGC.fade) { const k = (performance.now() - BGC.fade.t0) / 600; if (k >= 1) BGC.fade = null; else { c.save(); c.globalAlpha = 1 - k * k; c.drawImage(BGC.fade.cv, 0, 0, W, H); c.restore(); } }
   neonSigns(t, G);
   if (S.gym === 2) { const glow = .7 + Math.sin(t * 3) * .05; c.save(); c.shadowColor = '#14b8a6'; c.shadowBlur = 18; c.fillStyle = `rgba(20,184,166,${glow})`; c.font = `900 ${Math.max(18, H * .07)}px "Arial Black", Arial, sans-serif`; c.textAlign = 'center'; c.fillText('FIT+', W * .82, 64); c.restore(); }
-  drawTrophyCase(t);
+  if (!env) drawTrophyCase(t); // mit 3D-Umgebung steht das Pokal-Regal im Raum
   return st;
+}
+/* Effekte über dem 3D-Raum: Pokale funkeln, neue Hantelscheiben glänzen golden */
+MK.on && MK.on('wg', d => { Sc.vis.rackGlow = { t0: performance.now(), g: d.g }; });
+function envFx(env, t) {
+  const A = env.anchors; if (!A || MK.S.set.reduce) return;
+  A.trophies.forEach((a, i) => { const s = Math.sin(t * 2 + i * 1.7); if (s > .9) star4(a.x - a.r * .15, a.y - a.r * .1, (s - .9) * 30 + 1, `rgba(255,255,255,${(s - .9) * 9})`); });
+  const rg = Sc.vis.rackGlow; if (!rg) return; const age = (performance.now() - rg.t0) / 1000; if (age > 3) { Sc.vis.rackGlow = null; return; }
+  const k = (age < .25 ? age / .25 : 1) * (age > 2.2 ? (3 - age) / .8 : 1), PL = { hanteln: 1, langhantel: 1, rack: 1, hack: 1, farmer: 1, tbar: 1, szstange: 1, plattform: 1 };
+  const hit = A.eq.filter(a => PL[a.id] && (MK.EXERCISES.some(e => e.eq === a.id && e.g === rg.g) || a.id === 'hanteln'));
+  c.save(); c.globalCompositeOperation = 'lighter';
+  hit.forEach((a, j) => { const cx = a.x + a.w / 2, cy = a.y + a.h * .55, r = Math.max(a.w, a.h) * .7, g = c.createRadialGradient(cx, cy, 0, cx, cy, r); g.addColorStop(0, `rgba(255,220,110,${.45 * k})`); g.addColorStop(1, 'rgba(255,200,60,0)'); c.fillStyle = g; c.fillRect(cx - r, cy - r, r * 2, r * 2);
+    for (let i = 0; i < 4; i++) { const an = t * 2.2 + i * Math.PI / 2 + j, rr = r * .55; star4(cx + Math.cos(an) * rr, cy + Math.sin(an) * rr * .6, 3 + Math.sin(t * 8 + i) * 1.5, `rgba(255,248,210,${k})`); } });
+  c.restore();
 }
 Sc.windows = () => BGC.win;
 function drawGymStatic(t) {
@@ -632,7 +654,8 @@ function drawEquipment(t) {
   const G = Sc.geo(), k = G.bg * .9;
   // drei Tiefen (Wand, Raummitte, vorne), hinten zuerst – und nie hinter der Theke: rechter Rand endet vor ihr
   const L = eqLayout(), DY = [-8, 10, 27], DS = [.8, .92, 1.04], barL = MK.S.eq.kuehl ? (Sc.barX0 || W * .66) - 8 * k : W + 999;
-  Object.keys(L).sort((a, b) => L[a].d - L[b].d).forEach(id => { const d = L[id].d, kk = k * DS[d], y = G.yF + DY[d], x = Math.min(L[id].x * W, barL - 62 * kk); contactShadow(x, y + 1, 52 * kk, 7 * kk, .45); EQDRAW[id](x, y, kk, t); });
+  if (Sc.env3dOn && Sc._env && Sc._env.eq) c.drawImage(Sc._env.eq, 0, 0, W, H); // 3D-Geräte als eigene Ebene, vor dem Spiegel
+  if (!Sc.env3dOn) Object.keys(L).sort((a, b) => L[a].d - L[b].d).forEach(id => { /* mit 3D-Umgebung stehen die Geräte als 3D-Modelle im Raum */ const d = L[id].d, kk = k * DS[d], y = G.yF + DY[d], x = Math.min(L[id].x * W, barL - 62 * kk); contactShadow(x, y + 1, 52 * kk, 7 * kk, .45); EQDRAW[id](x, y, kk, t); });
   if (MK.S.eq.kuehl) drawBar(G, k, t); else if (MK.S.eq.boombox) { Sc._boomOnBar = false; EQDRAW.boombox(FIXED.boombox * W, G.yF + 6, k, t); }
 }
 
