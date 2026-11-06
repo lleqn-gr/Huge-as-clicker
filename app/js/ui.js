@@ -124,6 +124,8 @@ U.refresh = () => { const P = $('pane'); P._keep = [tab, P.scrollTop]; U.quick()
 U.initLayout = function () { if (mobile()) tab = 'train'; let was = mobile(); addEventListener('resize', () => { const m = mobile(); if (m !== was) { was = m; if (m) tab = 'train'; U.renderTab(); } }); };
 
 /* Info-Knopf: kurze Erklärung erst auf Antippen */
+// Logo-Schrift: weiß, außer die Sponsorfarbe ist so hell, dass Weiß schlecht lesbar wäre (Kontrast < 4,5:1)
+const logoInk = col => { const m = /^#?([0-9a-f]{6})$/i.exec(col || ''); if (!m) return '#fff'; const L = [0, 2, 4].map(i => { const v = parseInt(m[1].slice(i, i + 2), 16) / 255; return v <= .03928 ? v / 12.92 : Math.pow((v + .055) / 1.055, 2.4); }), lum = .2126 * L[0] + .7152 * L[1] + .0722 * L[2]; return 1.05 / (lum + .05) >= 4.5 ? '#fff' : '#141414'; };
 const ib = t => `<button class="ib" data-info="${esc(t)}" aria-label="Info">i</button>`;
 U.info = function (btn) { let pop = document.getElementById('infoPop'); if (!pop) { pop = document.createElement('div'); pop.id = 'infoPop'; document.body.appendChild(pop); pop.onclick = () => { pop.hidden = true; }; }
   if (!pop.hidden && pop._b === btn) { pop.hidden = true; return; } pop._b = btn; pop.textContent = btn.dataset.info; pop.hidden = false;
@@ -189,7 +191,7 @@ function paneComp(P) {
 U.afterCompStart = () => { if (!mobile()) $('stage').scrollIntoView({ behavior: 'smooth', block: 'start' }); U.quick(); };
 
 /* --- Imperium (Cookie-Clicker-Prinzip) --- */
-let bizN = 1, bizStat = false; const bizOpenSet = new Set();
+let bizN = 1, bizStat = false; const bizOpenSet = new Set(), bizSecClosed = new Set();
 /* Imperium-Statistik: Einkommen der letzten Stunden (log. Skala) und Anteil je Geschäft */
 function bizStats() {
   const S = MK.S, pts = S.hist.mins.filter(m => m[3] != null).slice(-360), W = 320, Hh = 110, own = MK.BIZ.filter(B => MK.bizCount(B.id) > 0), tot = MK.income() || 1;
@@ -251,7 +253,7 @@ const chip = (k, txt, kind) => `<span class="fx fx-${kind || 'n'}">${ico(k, 'fxi
 const secH = (title, sub, info) => `<div class="sec"><h3>${title}${info ? ' ' + ib(info) : ''}</h3>${sub ? `<p>${sub}</p>` : ''}</div>`;
 const tile = (k, col) => `<span class="tile" style="--t:${col || '#5c564a'}">${ico(k, 'ti2')}</span>`;
 function paneBiz(P) {
-  const S = MK.S, inc = MK.income(), xm = MK.bonus().xpMul || 1, f = v => v < 10 ? MK.fmt1(v) : MK.fmt(v);
+  const S = MK.S, inc = MK.income(), xm = MK.bonus().xpMul || 1, f = v => v > 0 && v < 1 ? v.toLocaleString('de-DE', { maximumFractionDigits: 2 }) : v < 10 ? MK.fmt1(v) : MK.fmt(v);
   const lvB = Math.round(MK.totalLv() * (1 + (MK.bonus().lvInc || 0) * 100));
   let h = `<div class="kpis"><div class="kpi"><span class="kl">${ico('rate')}Einkommen</span><b>${f(inc)} €/s</b></div><div class="kpi"><span class="kl">${ico('xp')}Muskel-Turbo</span><b>×${MK.fmt1(xm)} XP</b></div><div class="kpi"><span class="kl">${ico('star')}Level-Bonus</span><b>+${MK.fmt(lvB)} %</b></div></div>
     ${(() => { const M = MK.MILES[S.mile]; if (!M) return ''; const prev = S.mile ? MK.MILES[S.mile - 1][0] : 0, k = Math.max(0, Math.min(1, Math.log10(Math.max(1, S.stats.earned) / Math.max(1, prev)) / Math.log10(M[0] / Math.max(1, prev))));
@@ -305,6 +307,8 @@ function paneBiz(P) {
   const re = () => { const sc = P.scrollTop; paneBiz(P); P.scrollTop = sc; U.liveBuy(); U.quick(); MK.save(); };
   P.querySelectorAll('[data-bizn]').forEach(b => b.onclick = () => { bizN = b.dataset.bizn === 'max' ? 'max' : +b.dataset.bizn; re(); });
   P.querySelectorAll('[data-bstat]').forEach(b => b.onclick = () => { bizStat = !bizStat; MK.Audio.play('pop'); re(); });
+  P.querySelectorAll('[data-bsec]').forEach(b => b.onclick = () => { const id = b.dataset.bsec; bizSecClosed.has(id) ? bizSecClosed.delete(id) : bizSecClosed.add(id); MK.Audio.play('pop'); re(); });
+  P.querySelectorAll('.bmore').forEach(b => b.onkeydown = e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); b.click(); } });
   P.querySelectorAll('[data-bopen]').forEach(b => b.onclick = e => { if (e.target.closest('button, label, input')) return; const id = b.dataset.bopen; bizOpenSet.has(id) ? bizOpenSet.delete(id) : bizOpenSet.add(id); MK.Audio.play('pop'); re(); });
   P.querySelectorAll('[data-autob]').forEach(b => b.onchange = () => { const id = b.dataset.autob;
     if (!(S.staff || []).includes('klaus')) { b.checked = true; setTimeout(() => { b.checked = false; }, 380); MK.Audio.play('error'); U.toast('Kaufe Manager Klaus im Shop, um Auto-Kauf freizuschalten', 'big'); return; }
@@ -363,7 +367,7 @@ function paneShop(P) {
   h += secH('Sponsoren', 'Ein Vertrag gleichzeitig: Diamanten (auch offline) und kleine Boni.');
   MK.SPONSORS.forEach(sp => { const ok = MK.sponsorOk(sp), act = S.sponsor === sp.id, had = (S.sponsored || []).includes(sp.id);
     const list = sp.req.map(r => { const m = MK.reqMet(r), hv = MK.reqHave(r); return `<li class="${m ? 'ok' : 'no'}">${m ? '✓' : '✗'} ${MK.reqText(r)}${!m && hv != null ? ` <small>(du: ${hv})</small>` : ''}</li>`; }).join('');
-    h += `<div class="card spon2 ${act ? 'act' : ''} ${ok || act ? '' : 'locked2'}"><div class="r-top"><span class="logo2" style="--sc:${sp.col}">${sp.logo}</span><div class="r-m"><h4>${sp.name}${act ? ' <span class="on2">Aktiv</span>' : ''}</h4>
+    h += `<div class="card spon2 ${act ? 'act' : ''} ${ok || act ? '' : 'locked2'}"><div class="r-top"><span class="logo2" style="--sc:${sp.col};color:${logoInk(sp.col)}">${sp.logo}</span><div class="r-m"><h4>${sp.name}${act ? ' <span class="on2">Aktiv</span>' : ''}</h4>
       <div class="fxs">${chip('dia', `${MK.fmt1(sp.dph * (1 + MK.bonus().sponsor))}/Std`, 'd')}${chip('xp', `+${Math.round(sp.boost.xp * 100)} % XP`, 'x')}${chip('star', `+${Math.round(sp.boost.fame * 100)} % Ruhm`, 'g')}${sp.bonus && !had ? chip('gift', MK.rewardText(sp.bonus), 'n') : ''}</div></div>
       ${act ? `<button class="btn xf-ghost" data-spon="${sp.id}">Kündigen</button>` : `<button class="btn" data-spon="${sp.id}" data-pr="0" ${ok ? '' : `data-need="${esc('Noch nicht erfüllt: ' + sp.req.filter(r => !MK.reqMet(r)).map(MK.reqText).join(', '))}"`}>Unterschreiben</button>`}</div>
       ${act || ok ? '' : `<ul class="skreq light">${list}</ul>`}</div>`; });
