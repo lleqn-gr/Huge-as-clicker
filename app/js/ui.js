@@ -591,12 +591,7 @@ function paneOpt(P) {
       <h3 class="sh">Wiederholungen je Muskelgruppe</h3><table class="stats"><tbody>${MK.MUSCLES.map(m => row(`${m.name} (Lv ${S.m[m.id].lv})`, MK.fmt(st.byG[m.id] || 0))).join('')}</tbody></table>`;
     h = h.replace('<table class="stats">', charts() + '<table class="stats">');
   }
-  if (optTab === 'save') {
-    h += `<p class="hint">Code kopieren, auf dem anderen Gerät einfügen.</p>
-      <label class="lbl" for="exp">Export-Code</label><textarea id="exp" readonly rows="3"></textarea><button class="btn wide" id="cpy">Code kopieren</button>
-      <label class="lbl" for="imp">Importieren</label><textarea id="imp" rows="3" placeholder="Code hier einfügen"></textarea><button class="btn alt wide" id="impBtn">Spielstand laden</button>
-`;
-  }
+  if (optTab === 'save') h += paneSave();
   P.innerHTML = h;
   P.querySelectorAll('[data-ot]').forEach(b => b.onclick = () => { optTab = b.dataset.ot; paneOpt(P); });
   if (optTab === 'set') {
@@ -620,11 +615,66 @@ function paneOpt(P) {
     let armed2 = false; $('vRst').onclick = () => { const b = $('vRst'); if (!armed2) { armed2 = true; b.textContent = 'Wirklich? Alles wird gelöscht – nochmal tippen'; setTimeout(() => { armed2 = false; const b2 = $('vRst'); if (b2) b2.textContent = 'Neu starten'; }, 4000); return; }
       MK.reset(); MK.Scene.buildCrowd(); U.training(); U.refresh(); U.tutorial(); U.toast('Neuer Spielstand'); };
   }
-  if (optTab === 'save') {
-    $('exp').value = MK.exportSave();
-    $('cpy').onclick = () => { const t = $('exp'); const ok = () => U.toast('Kopiert'); try { navigator.clipboard.writeText(t.value).then(ok, () => { t.select(); U.toast('Markiert – jetzt kopieren'); }); } catch (e) { t.select(); U.toast('Markiert – jetzt kopieren'); } };
-    $('impBtn').onclick = () => { try { MK.importSave($('imp').value); U.toast('Spielstand geladen'); MK.Scene.buildCrowd(); U.training(); U.refresh(); } catch (e) { U.toast('Der Code ist ungültig'); } };
-  }
+  if (optTab === 'save') bindSave(P);
+}
+
+/* ---------- Spielstand übertragen: kurzer Code (online), Datei (ohne Internet), Sicherung, langer Code ---------- */
+const XF = { mode: null, code: null, until: 0, busy: false, err: '', confirm: null, inp: '' };
+const XI = { up: '<path d="M12 19V5M6 11l6-6 6 6"/>', down: '<path d="M12 5v14M6 13l6 6 6-6"/>', file: '<path d="M6 3h8l4 4v14H6zM14 3v4h4"/>', save: '<path d="M12 4v11M7 10l5 5 5-5M5 20h14"/>', open: '<path d="M12 20V9M7 14l5-5 5 5M5 4h14"/>', undo: '<path d="M9 7L4 12l5 5M4 12h11a5 5 0 010 10h-2"/>' };
+const xi = k => `<svg class="xfi" viewBox="0 0 24 24" aria-hidden="true">${XI[k]}</svg>`;
+const xfInfo = d => `<b>Lv ${MK.fmt(d.lv)}</b><span>${MK.fmt(d.money)} €</span><span>${MK.fmt(d.dia)} 💎</span>`;
+const xfDate = t => t ? new Date(t).toLocaleString('de-DE', { day: '2-digit', month: '2-digit', hour: '2-digit', minute: '2-digit' }) : '';
+function paneSave() {
+  const T = MK.Transfer, on = T.online(), bak = T.backup();
+  let h = `<h3 class="sh">Spielstand übertragen</h3>`;
+  if (XF.confirm) { const a = T.describeNow(), b = T.describe(XF.confirm.d);
+    return h + `<div class="xf-card xf-warn"><b class="xf-t">Dein aktueller Stand wird ersetzt</b>
+      <div class="xf-cmp"><div><small>Jetzt hier</small>${xfInfo(a)}</div><div class="xf-arrow" aria-hidden="true">→</div><div><small>Neu${b.when ? ' · ' + xfDate(b.when) : ''}</small>${xfInfo(b)}</div></div>
+      <p class="hint">Der jetzige Stand bleibt als Sicherung erhalten.</p>
+      <div class="xf-row"><button class="btn ok" id="xfYes">Ersetzen</button><button class="btn xf-ghost" id="xfNo">Abbrechen</button></div></div>`; }
+  h += `<div class="xf-row xf-modes"><button class="xf-mode" data-xm="send" aria-pressed="${XF.mode === 'send'}">${xi('up')}<span>Senden</span></button><button class="xf-mode" data-xm="recv" aria-pressed="${XF.mode === 'recv'}">${xi('down')}<span>Empfangen</span></button></div>`;
+  if (XF.mode && !on) h += `<div class="xf-card"><p class="hint">Online-Übertragung ist noch nicht eingerichtet. Nimm solange die Datei (unten).</p></div>`;
+  else if (XF.mode === 'send') {
+    if (XF.busy) h += `<div class="xf-card"><p class="hint">Wird hochgeladen …</p></div>`;
+    else if (XF.code && Date.now() < XF.until) h += `<div class="xf-card"><small class="xf-l">Dein Code</small><div class="xf-code" aria-label="Code ${XF.code.split('').join(' ')}">${XF.code.slice(0, 3)}<i></i>${XF.code.slice(3)}</div>
+      <p class="hint">Auf dem anderen Gerät: <b>Optionen → Spielstand → Empfangen</b>. Gültig noch <b id="xfLeft"></b>, einmal einlösbar.</p><button class="btn alt wide" id="xfNew">Neuen Code</button></div>`;
+    else h += `<div class="xf-card"><p class="hint">${XF.code ? 'Der Code ist abgelaufen.' : 'Erzeugt einen kurzen Code für das andere Gerät.'}</p><button class="btn wide" id="xfNew">Code erzeugen</button></div>`;
+  } else if (XF.mode === 'recv') h += `<div class="xf-card"><label class="xf-l" for="xfIn">Code vom anderen Gerät</label>
+      <form id="xfForm" class="xf-row"><input id="xfIn" class="xf-in" maxlength="7" autocomplete="off" autocapitalize="characters" spellcheck="false" placeholder="ABC123" value="${esc(XF.inp)}"><button class="btn ok" type="submit" ${XF.busy ? 'disabled' : ''}>${XF.busy ? '…' : 'Laden'}</button></form></div>`;
+  if (XF.err) h += `<p class="xf-err" role="alert">${esc(XF.err)}</p>`;
+  h += `<h3 class="sh">Ohne Internet</h3><div class="xf-row"><button class="btn alt" id="xfDl">${xi('save')}Als Datei speichern</button><button class="btn alt" id="xfUp">${xi('open')}Datei laden</button></div>
+    <input type="file" id="xfFile" accept=".json,application/json,text/plain" hidden>`;
+  if (bak) h += `<h3 class="sh">Sicherung</h3><div class="xf-card xf-bak"><div><small>Vorheriger Stand · ${xfDate(bak.t)}</small><div class="xf-inf">${xfInfo(bak.info)}</div></div><button class="btn xf-ghost" id="xfRestore">${xi('undo')}Zurückholen</button></div>`;
+  h += `<details class="xf-old"><summary>Langer Code (alt)</summary><textarea id="exp" readonly rows="3"></textarea><button class="btn wide" id="cpy">Code kopieren</button>
+    <textarea id="imp" rows="3" placeholder="Code hier einfügen" aria-label="Code einfügen"></textarea><button class="btn alt wide" id="impBtn">Spielstand laden</button></details>`;
+  return h;
+}
+let xfTimer = 0;
+function bindSave(P) {
+  const T = MK.Transfer, re = () => paneOpt(P);
+  const ask = (text, src) => { try { XF.confirm = { d: T.parse(text), text, src }; XF.err = ''; } catch (e) { XF.err = 'Das ist kein gültiger Spielstand.'; } re(); };
+  P.querySelectorAll('[data-xm]').forEach(b => b.onclick = () => { XF.mode = XF.mode === b.dataset.xm ? null : b.dataset.xm; XF.err = ''; re(); if (XF.mode === 'recv') setTimeout(() => { const i = $('xfIn'); if (i) i.focus(); }, 30); });
+  const nw = $('xfNew'); if (nw) nw.onclick = () => { XF.busy = true; XF.err = ''; re();
+    T.send().then(r => { XF.code = r.code; XF.until = r.until; MK.Audio.play('pop'); }, e => { XF.err = 'Senden hat nicht geklappt. Internet an?'; console.warn(e); }).finally(() => { XF.busy = false; if (P.isConnected) re(); }); };
+  const f = $('xfForm'); if (f) { const i = $('xfIn'); i.oninput = () => { const v = T.cleanCode(i.value); XF.inp = v; if (i.value !== v) i.value = v; };
+    f.onsubmit = e => { e.preventDefault(); const code = T.cleanCode(i.value); if (code.length !== 6) { XF.err = 'Der Code hat 6 Zeichen.'; re(); return; }
+      XF.busy = true; XF.err = ''; re();
+      T.fetch(code).then(d => { if (!d) { XF.err = 'Code falsch oder abgelaufen (15 Minuten, nur einmal).'; return; } XF.inp = ''; ask(d, 'code'); }, e => { XF.err = 'Laden hat nicht geklappt. Internet an?'; console.warn(e); })
+        .finally(() => { XF.busy = false; if (P.isConnected) re(); }); }; }
+  const y = $('xfYes'); if (y) y.onclick = () => { try { T.apply(XF.confirm.text); XF.confirm = null; XF.mode = null; MK.Audio.play('level'); U.toast('Spielstand geladen – weiter geht’s!', 'big'); MK.Scene.buildCrowd(); U.training(); U.refresh(); } catch (e) { XF.confirm = null; XF.err = 'Das ist kein gültiger Spielstand.'; re(); } };
+  const n = $('xfNo'); if (n) n.onclick = () => { XF.confirm = null; re(); };
+  $('xfDl') && ($('xfDl').onclick = () => { const name = T.download(); U.toast('Gespeichert: ' + name); });
+  const fi = $('xfFile'); $('xfUp') && ($('xfUp').onclick = () => fi.click());
+  if (fi) fi.onchange = () => { const file = fi.files && fi.files[0]; if (!file) return; T.readFile(file).then(t => ask(t, 'file'), () => { XF.err = 'Datei konnte nicht gelesen werden.'; re(); }); };
+  let armed = false; const rs = $('xfRestore'); if (rs) rs.onclick = () => { if (!armed) { armed = true; rs.lastChild.textContent = 'Sicher? Nochmal tippen'; setTimeout(() => { armed = false; if (rs.isConnected) rs.lastChild.textContent = 'Zurückholen'; }, 4000); return; }
+    if (T.restore()) { U.toast('Vorheriger Stand ist zurück', 'big'); MK.Scene.buildCrowd(); U.training(); U.refresh(); } };
+  // langer Code (alt)
+  const ex = $('exp'); if (ex) { P.querySelector('.xf-old').addEventListener('toggle', () => { ex.value = MK.exportSave(); }, { once: true });
+    $('cpy').onclick = () => { ex.value = ex.value || MK.exportSave(); const ok = () => U.toast('Kopiert'); try { navigator.clipboard.writeText(ex.value).then(ok, () => { ex.select(); U.toast('Markiert – jetzt kopieren'); }); } catch (e) { ex.select(); U.toast('Markiert – jetzt kopieren'); } };
+    $('impBtn').onclick = () => ask($('imp').value, 'long'); }
+  // Restzeit des Codes
+  clearInterval(xfTimer); const left = $('xfLeft');
+  if (left) { const tick = () => { const s = Math.max(0, Math.round((XF.until - Date.now()) / 1000)); if (!left.isConnected) { clearInterval(xfTimer); return; } if (!s) { clearInterval(xfTimer); re(); return; } left.textContent = Math.floor(s / 60) + ':' + String(s % 60).padStart(2, '0') + ' min'; }; tick(); xfTimer = setInterval(tick, 1000); }
 }
 
 /* Graphen: Gesamt-Level der letzten Stunden, Wiederholungen pro Tag, Muskel-Balance */

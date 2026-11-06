@@ -813,6 +813,27 @@ button.bought,.btn.bought{animation:boughtPop .5s cubic-bezier(.3,1.9,.45,1)}
 #spPop.spcard .rv-act{display:flex;gap:6px;margin-top:5px}#spPop.spcard .rv-act .btn{padding:3px 10px;font-size:13px}#spPop.spcard .rv-act .ghost{color:#f4efff;border-color:rgba(255,255,255,.5);background:transparent;padding:3px 8px;font-size:12.5px}
 #spPop.spcard .rv-time{position:absolute;left:0;bottom:0;height:3px;background:#9b5cff;width:100%;transform-origin:left;animation:rvTime 9s linear forwards}
 @media (max-width:520px){#spPop.spcard{width:min(190px,56%);left:6px;top:48px;padding:4px 6px 6px 4px;gap:6px}#spPop.spcard .sp-txt small{display:none}#spPop.spcard .rv-act .ghost{display:none}#spPop.spcard .sp-ic{width:34px;height:34px}#spPop.spcard .sp-txt b{font-size:14px}#spPop.spcard .rv-act .btn{padding:2px 7px;font-size:11.5px}#spPop.spcard .rv-act .ghost{padding:2px 6px;font-size:11px}}
+/* ===== Spielstand übertragen ===== */
+.xf-row{display:flex;gap:8px;align-items:stretch;margin-top:8px}.xf-row>*{flex:1;min-width:0}
+.xf-modes .xf-mode{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border:2px solid #d9d2c2;border-radius:12px;background:#fff;font-family:var(--ui);font-weight:700;font-size:16px;color:var(--ink);cursor:pointer;box-shadow:0 3px 0 #d9d2c2;transition:transform .06s,box-shadow .06s}
+.xf-modes .xf-mode:active{transform:translateY(3px);box-shadow:0 0 0 #d9d2c2}
+.xf-modes .xf-mode[aria-pressed="true"]{border-color:var(--ink);box-shadow:0 3px 0 var(--ink);background:#fff7d6}
+.xf-modes .xf-mode .xfi{width:26px;height:26px}
+.xfi{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round;vertical-align:-3px;margin-right:6px}
+.xf-modes .xfi{margin:0}
+.xf-card{background:#fff;border:2px solid #e3dccb;border-radius:12px;padding:12px;margin-top:8px}
+.xf-card .hint{margin:6px 0 0}
+.xf-l{display:block;font-family:var(--ui);font-weight:700;font-size:13px;color:var(--muted);text-transform:uppercase;letter-spacing:.8px}
+.xf-code{font-family:var(--ui);font-weight:800;font-size:44px;letter-spacing:6px;line-height:1.1;margin:4px 0 2px;color:var(--ink);font-variant-numeric:tabular-nums;user-select:all}
+.xf-code i{display:inline-block;width:12px}
+.xf-in{font-family:var(--ui);font-weight:800;font-size:26px;letter-spacing:5px;text-transform:uppercase;padding:6px 10px;border:2px solid var(--ink);border-radius:10px;background:#fff;min-width:0;flex:2}
+.xf-err{color:#b3261e;font-weight:700;margin:8px 0 0}
+.xf-warn{border-color:#e0a100;background:#fffaf0}.xf-t{font-family:var(--ui);font-size:19px}
+.xf-cmp{display:flex;align-items:center;gap:8px;margin-top:8px}.xf-cmp>div:not(.xf-arrow){flex:1;background:#fff;border:1.5px solid #e3dccb;border-radius:10px;padding:8px;display:flex;flex-direction:column;gap:1px}
+.xf-cmp small,.xf-bak small{color:var(--muted);font-size:12px}.xf-cmp b{font-family:var(--ui);font-size:20px}.xf-arrow{font-size:20px;color:var(--muted)}
+.xf-bak{display:flex;align-items:center;gap:10px}.xf-bak>div{flex:1}.xf-inf{display:flex;gap:10px;align-items:baseline}.xf-inf b{font-family:var(--ui)}
+.xf-ghost{background:#fff!important;color:var(--ink)!important}
+.xf-old{margin-top:14px;color:var(--muted)}.xf-old summary{cursor:pointer;font-weight:600}.xf-old textarea{width:100%;margin-top:6px}
 /* ===== Reiter-Bereich: sportliche, ruhige Schrift statt Comic ===== */
 :root{--ui:"Barlow Condensed","Arial Narrow","Roboto Condensed",system-ui,sans-serif;--ui-body:"Barlow",system-ui,-apple-system,"Segoe UI",Arial,sans-serif}
 .app > .side{font-family:var(--ui-body);font-feature-settings:"tnum" 1}
@@ -929,6 +950,8 @@ button.bought,.btn.bought{animation:boughtPop .5s cubic-bezier(.3,1.9,.45,1)}
 <script src="js/minigames.js"></script>
 <script src="js/lab.js"></script>
 <script src="js/guide.js"></script>
+<script src="js/cloud-config.js"></script>
+<script src="js/transfer.js"></script>
 <script src="js/ui.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/main.js"></script>
