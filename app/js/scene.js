@@ -149,6 +149,15 @@ const EQDRAW = {
 Sc.eqPlaces = () => { const L = eqLayout(), G = Sc.geo(), k = G.bg * .9, DY = [-8, 10, 27], DS = [.8, .92, 1.04], barL = MK.S.eq.kuehl ? (Sc.barX0 || W * .66) - 8 * k : W + 999;
   return Object.keys(L).map(id => { const d = L[id].d, kk = k * DS[d]; return { id, sx: Math.min(L[id].x * W, barL - 62 * kk), sy: G.yF + DY[d], d, lv: MK.S.eq[id] || 1, wg: wgEq(id) }; }); };
 Sc.wgEq = id => wgEq(id);
+/* 3D-Umgebung: nur die gekauften Geräte der gewählten Muskelgruppe, auf festen Stellplätzen an der Rückwand –
+   links zwischen Spiegel und Figur, rechts zwischen Figur und Theke; nie mittig hinter der Figur, nie in der Theke. */
+Sc.eqPlaces3d = g => { const G = Sc.geo();
+  const owned = MK.EQUIP.filter(q => MK.S.eq[q.id] && EQDRAW[q.id] && !FIXED[q.id] && MK.eqUses(q).some(e => e.g === g)).map(q => q.id);
+  const barR = MK.S.eq.kuehl ? ((Sc.barX0 || W * .66) - 14) / W : .95, ivs = [[.05, .4], [.6, barR]].filter(([a, b]) => b - a > .1), tot = ivs.reduce((s, [a, b]) => s + b - a, 0);
+  let rest = owned.length; const xs = [];
+  ivs.forEach(([a, b], i) => { const n = i === ivs.length - 1 ? rest : Math.min(rest, Math.round(owned.length * (b - a) / tot)); rest -= n; for (let k = 0; k < n; k++) xs.push({ x: a + (b - a) * (k + .5) / n, gap: (b - a) / n }); });
+  return owned.map((id, i) => { const p = xs[i] || { x: .5, gap: 1 }, front = p.gap < .11 && i % 2 === 1; // eng → jedes zweite Gerät eine Reihe nach vorn
+    return { id, sx: p.x * W, sy: G.yF + (front ? 10 : -8), d: front ? 1 : 0, lv: MK.S.eq[id] || 1, wg: wgEq(id) }; }); };
 function wgEq(id) { const gs = [...new Set(MK.EXERCISES.filter(e => e.eq === id).map(e => e.g))]; return gs.length ? Math.max(...gs.map(g => MK.wg ? MK.wg(g) : 1)) : Math.max(1, MK.S.wset || 1); }
 function stackW(x, yTop, yBot, k, n) { // Gewichtsblock im Hintergrund: dicke schwarze Platten, eckig mit leicht runden Ecken
   const N = 9, ph = 6.4 * k, gap = 1.1 * k, w = 24 * k, nn = Math.max(1, Math.min(N, n));
@@ -451,7 +460,7 @@ function env3dFor(G) {
   if (E3.state !== 'ready' || E3.slow || !E3.has(S.gym)) return null;
   const p = Sc.dayPhase();
   const tod = p < .2 ? 'morgen' : p < .55 ? 'tag' : p < .72 ? 'abend' : 'nacht'; // Licht im 3D-Raum nach echter Uhrzeit
-  try { return E3.get({ gym: S.gym, W, H, yF: G.yF, py: G.py, pScale: G.pScale, dpr, q: S.set.quality, tod }); }
+  try { const L3 = { gym: S.gym, W, H, yF: G.yF, py: G.py, pScale: G.pScale, dpr, q: S.set.quality, tod, group: S.g }, r = E3.get(L3); if (r && !Sc._eqWarm && E3.prewarm) { Sc._eqWarm = 1; E3.prewarm(L3); } return r; }
   catch (e) { console.error('3D-Umgebung:', e); E3.state = 'fail'; return null; }
 }
 function drawGym(t) {

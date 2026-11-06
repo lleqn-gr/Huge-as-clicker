@@ -106,13 +106,40 @@ E.wx = wx; E.wy = wy;
 /* ---------- Gym ---------- */
 function get(L) {
   if (E.state !== 'ready' || !E.has(L.gym)) return null;
-  const S = MK.S, tod = L.tod || (L.night ? 'nacht' : 'tag'), places = (MK.Scene.eqPlaces && MK.Scene.eqPlaces()) || [], bar = S.eq.kuehl && MK.Scene.barGeom ? MK.Scene.barGeom() : null;
-  const key = [L.gym, L.W, L.H, Math.round(L.yF), Math.round(L.py), L.pScale.toFixed(4), L.dpr, L.q, tod, S.eq.kuehl || 0, S.fame > 40 ? 1 : 0, S.fame >= 10 ? 1 : 0,
-    places.map(p => p.id + p.lv + '.' + p.wg + '@' + Math.round(p.sx) + ',' + Math.round(p.sy)).join(';'), MK.TOURNEYS.map(T => S.trophies[T.id] || 0).join(''), posterList().map(p => p.id + p.t2).join('|')].join(':');
+  const S = MK.S, tod = L.tod || (L.night ? 'nacht' : 'tag'), bar = S.eq.kuehl && MK.Scene.barGeom ? MK.Scene.barGeom() : null;
+  const base = [L.gym, L.W, L.H, Math.round(L.yF), Math.round(L.py), L.pScale.toFixed(4), L.dpr, L.q, tod].join(':');
+  const key = [base, S.eq.kuehl || 0, S.fame > 40 ? 1 : 0, S.fame >= 10 ? 1 : 0, MK.TOURNEYS.map(T => S.trophies[T.id] || 0).join(''), posterList().map(p => p.id + p.t2).join('|')].join(':');
   const C = camFrom(L);
-  return render('gym', key, L, C, () => { const anchors = { eq: [], trophies: [] }, B = buildRoom(L.gym, C, L, wx, wy, anchors, bar), eq = new THREE.Group(); placeEquip(eq, C, places, anchors);
-    return { bg: B.g, eq, front: B.front, wins: B.wins, anchors, lights: g => lights(g, C, L.gym, tod) }; });
+  const room = render('gym', key, L, C, () => { const anchors = { eq: [], trophies: [] }, B = buildRoom(L.gym, C, L, wx, wy, anchors, bar);
+    return { bg: B.g, front: B.front, wins: B.wins, anchors, lights: g => lights(g, C, L.gym, tod) }; });
+  if (!room) return null;
+  // Geräte der gewählten Muskelgruppe: eigene Ebene, je Gruppe zwischengespeichert
+  const eq = eqLayer(L, C, base, tod, L.group);
+  return Object.assign({}, room, { eq: eq.cv, eqKey: eq.key, anchors: Object.assign({}, room.anchors, { eq: eq.anchors }) });
 }
+/* ---------- Geräte-Ebene je Muskelgruppe ----------
+   Nur die Geräte + ihre Schatten (auf unsichtbarem Boden/Wand) – durchsichtiger Hintergrund. Bis zu 10 Ebenen im Speicher. */
+const EQC = new Map();
+function eqLayer(L, C, base, tod, g) {
+  const places = (MK.Scene.eqPlaces3d && MK.Scene.eqPlaces3d(g)) || [], key = base + '|' + g + '|' + places.map(p => p.id + p.lv + '.' + p.wg + '@' + Math.round(p.sx) + ',' + Math.round(p.sy)).join(';');
+  const hit = EQC.get(key); if (hit) { EQC.delete(key); EQC.set(key, hit); return hit; }
+  const t0 = performance.now(), anchors = [];
+  const sc = new THREE.Scene(), grp = new THREE.Group(); sc.add(grp); placeEquip(grp, C, places, { eq: anchors }); lights(sc, C, L.gym, tod);
+  // Schattenfänger: Boden und Rückwand zeigen nur die Schatten der Geräte
+  const sm = new THREE.ShadowMaterial({ opacity: .32 }), fl = new THREE.Mesh(new THREE.PlaneGeometry(80, C.zw + 4), sm); fl.rotation.x = -Math.PI / 2; fl.position.z = -(C.zw + 4) / 2 + 2; fl.receiveShadow = true; sc.add(fl);
+  const wl = new THREE.Mesh(new THREE.PlaneGeometry(80, 20), sm); wl.position.set(0, 10, -C.zw + .01); wl.receiveShadow = true; sc.add(wl);
+  applyCam(C); const pr = Math.min(L.dpr, L.q === 'hoch' ? 2 : 1.5); R.setPixelRatio(pr); R.setSize(L.W, L.H, false); R.shadowMap.enabled = L.q !== 'niedrig'; R.getDrawingBufferSize(U.uRes.value); U.uW.value = clamp(L.pScale * 1.9, 1.1, 2.6) * pr;
+  R.setClearColor(0x000000, 0); R.render(sc, cam);
+  const cv = document.createElement('canvas'); cv.width = R.domElement.width; cv.height = R.domElement.height; cv.getContext('2d').drawImage(R.domElement, 0, 0);
+  grp.traverse(o => { if (o.geometry && !SHARED.has(o.geometry) && !o.userData.outline && o.geometry.type !== 'LatheGeometry') o.geometry.dispose(); }); fl.geometry.dispose(); wl.geometry.dispose(); sm.dispose();
+  const res = { cv: places.length ? cv : null, key, anchors }; EQC.set(key, res); while (EQC.size > 10) EQC.delete(EQC.keys().next().value);
+  E.stats = Object.assign({}, E.stats, { eqMs: Math.round(performance.now() - t0) });
+  return res;
+}
+// Andere Muskelgruppen im Leerlauf vorrendern, damit der Wechsel sofort geht
+const later = f => window.requestIdleCallback ? requestIdleCallback(f, { timeout: 2000 }) : setTimeout(f, 250);
+E.prewarm = L => { if (E.state !== 'ready' || !E.has(L.gym)) return; const tod = L.tod || 'tag', base = [L.gym, L.W, L.H, Math.round(L.yF), Math.round(L.py), L.pScale.toFixed(4), L.dpr, L.q, tod].join(':'), C = camFrom(L);
+  const todo = MK.MUSCLES.map(m => m.id).filter(g => g !== L.group); const step = () => { const g = todo.shift(); if (!g) return; eqLayer(L, C, base, tod, g); later(step); }; later(step); };
 
 /* ---------- Duell-/Turnier-Bühne ----------
    Kämpfer stehen unten (py, Größe pScale), die Jury steht an der Bühnenkante (yF−4) mit Größe 0,42·H/440 → daraus der Horizont. */
