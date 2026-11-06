@@ -30,7 +30,7 @@ MK.fresh = () => ({
   rival: { gym: 0, tot: 8, wins: 0, losses: 0, next: Date.now() + 10 * 60e3 },
   stats: { reps: 0, crits: 0, beasts: 0, bonus: 0, wins: 0, losses: 0, earned: 0, spent: 0, play: 0, tourneys: 0, memes: 0, virals: 0, rivalWins: 0, levels: 0, best: 0, byG: {} },
   pump: 0, beast: 0, beastOn: 0, sweat: 0, tut: 0,
-  set: { vol: .8, music: .45, sfx: .8, quality: 'hoch', reduce: false, shake: true },
+  set: { vol: .8, music: .45, sfx: .8, quality: 'hoch', reduce: false, shake: true, env3d: true },
   lseen: {}, last: Date.now()
 });
 
@@ -502,6 +502,7 @@ MK.trainerGMul = g => 1 + .15 * MK.trainerGLv(g);
 MK.buyTrainer = function () { const S = MK.S, lv = MK.trainerRate(); if (lv >= MK.TRAINER_MAX || !MK.spend(MK.trainerCost(lv))) return false; S.trainer.lv = lv + 1; MK.dirty(); return true; };
 MK.buyTrainerG = function (g) { const S = MK.S; if (!MK.trainerRate() || !MK.spend(MK.trainerGCost(g))) return false; S.trainer.g[g] = MK.trainerGLv(g) + 1; MK.dirty(); return true; };
 MK.ensureNew = function () { MK.fixMoney();
+  { const S2 = MK.S; if (S2.set && S2.set.env3d == null) S2.set.env3d = true; } // Umgebung in 3D (Raum hinter der 2D-Figur), Rückfall 2D
   { const S1 = MK.S; if (!S1.trainer) S1.trainer = { lv: 0, g: {} }; if (!S1.trainer.g) S1.trainer.g = {}; }
   { const S0 = MK.S; if (!S0.diet) S0.diet = 'keep'; if (S0.fatOff == null) S0.fatOff = 0; if (!S0.staff) S0.staff = []; if (S0.diaAcc == null) S0.diaAcc = 0; if (!S0.ecoMig) { S0.ecoMig = 1; } }
   const S = MK.S;

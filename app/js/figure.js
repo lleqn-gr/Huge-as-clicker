@@ -1031,8 +1031,10 @@ Fig.render = function (ctx, wx, wy, scale, o) {
   out(ctx, o.breathK);
   const cs = Math.cos(rot), sn = Math.sin(rot), W = rot ? p => { const dx = (p.x - J.hipX) * scale, dy = (p.y - J.hipY) * scale; return { x: piv.x + dx * cs - dy * sn, y: piv.y + dx * sn + dy * cs }; } : p => ({ x: wx + p.x * scale, y: wy + p.y * scale });
   const RES = { rot, lie: !!pose.lie, D, J, scale, head: W(J.head), top: W({ x: J.head.x, y: J.head.y - D.headRy - 6 }), hip: W({ x: J.hipX, y: J.hipY }), ha: { l: W(G.arm.l.hd), r: W(G.arm.r.hd) }, el: { l: W(J.el.l), r: W(J.el.r) }, sh: { l: W(J.sh.l), r: W(J.sh.r) }, neck: W({ x: J.shX, y: J.shY - 4 }), foot: { l: W(J.foot.l), r: W(J.foot.r) }, hs: J.hs, props: pose.props || [] };
-  LAST[o.key] = { out, R: RES, wx, wy, scale, sig: o.sig }; return RES;
+  LAST[o.key] = { out, R: RES, wx, wy, scale, sig: o.sig, spr: rot ? null : { cv: cF, x: wx - OX * scale, y: wy - OY * scale, w: BW * scale, h: BH * scale, fy: wy } }; return RES;
 };
+/* zuletzt gezeichnetes Figurenbild (für Schatten auf dem 3D-Boden) */
+Fig.sprite = key => { const L0 = LAST[key]; return L0 && L0.spr; };
 
 /* Werkzeuge für die Seitenansicht (side.js) */
 Fig._h = { limb, smoothClosed, ellP, circP, inkFill, curve, line, glow, fd, mix, rgba, lerp, clamp, P, mid, TAU, rim, canv, camo, sweatFace, sweatDrops, OX, OY, BW, BH, TINK };

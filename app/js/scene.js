@@ -338,7 +338,7 @@ function lightRig(st, t, G) {
   if (st.light === 'stage') { const cols = ['255,210,120', '255,120,170', '160,140,255']; for (let i = 0; i < 3; i++) srcs.push({ x: W * (.25 + i * .25), y: 12, col: cols[i], r: 40, cone: .5, w0: 5, spot: 1, sway: Math.sin(t * .5 + i * 2) * W * .08 }); }
   c.save();
   // Leuchtkörper selbst
-  srcs.forEach(s => { if (s.bar) { c.fillStyle = '#e9edf0'; c.fillRect(s.x - s.bar / 2, s.y - 3, s.bar, 4); c.fillStyle = 'rgba(255,255,255,1)'; c.fillRect(s.x - s.bar / 2 + 2, s.y, s.bar - 4, 2); }
+  if (!Sc.env3dOn) srcs.forEach(s => { if (s.bar) { c.fillStyle = '#e9edf0'; c.fillRect(s.x - s.bar / 2, s.y - 3, s.bar, 4); c.fillStyle = 'rgba(255,255,255,1)'; c.fillRect(s.x - s.bar / 2 + 2, s.y, s.bar - 4, 2); }
     if (s.spot) { c.fillStyle = '#1b1b1e'; c.fillRect(s.x - 1, 0, 2, s.y - 4); c.beginPath(); c.ellipse(s.x, s.y, 8, 6, 0, 0, TAU); c.fill(); c.fillStyle = `rgb(${s.col})`; c.beginPath(); c.ellipse(s.x, s.y + 4, 5, 2.2, 0, 0, TAU); c.fill(); } });
   c.globalCompositeOperation = 'lighter';
   // Tageslicht durch die Fenster: morgens warm von links, mittags hell und steil, abends orange von rechts, nachts schwaches Mondlicht
@@ -417,13 +417,28 @@ function neonSigns(t, G) { const S = MK.S; if (S.gym < 2) return; const bk = Sc.
   if (S.gym === 3) { neonText('NO EXCUSES', W * .5, G.yF * .53, Math.max(18, H * .07), '255,60,60', t, 5); neonText('♥', W * .5 + Math.max(18, H * .07) * 3.6, G.yF * .53, Math.max(14, H * .05), '255,60,60', t * 1.3, 9); }
   if (S.gym === 4) neonText('GAINS', W * .83, G.yF * .42, Math.max(16, H * .05), '255,200,70', t, 7);
   c.restore(); }
+/* 3D-Umgebung (Raum hinter der 2D-Figur): fertiges Bild aus env3d.js oder null → alte 2D-Umgebung */
+function env3dFor(G) {
+  const S = MK.S, E3 = MK.Env3D; if (!E3 || !S.set.env3d || S.set.quality === 'niedrig') return null;
+  if (E3.state === 'idle' && E3.load) { E3.load(); return null; }
+  if (E3.state !== 'ready' || !E3.has(S.gym)) return null;
+  const p = Sc.dayPhase();
+  try { return E3.get({ gym: S.gym, W, H, yF: G.yF, py: G.py, pScale: G.pScale, dpr, q: S.set.quality, night: p > .72 && p < .97 }); }
+  catch (e) { console.error('3D-Umgebung:', e); E3.state = 'fail'; return null; }
+}
 function drawGym(t) {
-  const S = MK.S, G = Sc.geo(), st = GYMSTYLE[S.gym], key = [S.gym, W, H, Math.round(G.yF), dpr, S.fame > 40 ? 1 : 0].join(':');
-  if (BGC.key !== key) { const [cv2, x2] = texCanvas(W, H), c0 = c; c = x2; WINQ = []; try { drawGymStatic(t); } finally { BGC.win = WINQ; BGC.sky = null; WINQ = null; c = c0; } BGC.key = key; BGC.cv = cv2; }
-  c.drawImage(BGC.cv, 0, 0, W, H);
+  const S = MK.S, G = Sc.geo(), st = GYMSTYLE[S.gym], env = env3dFor(G), key = env ? env.key : [S.gym, W, H, Math.round(G.yF), dpr, S.fame > 40 ? 1 : 0].join(':');
+  Sc.env3dOn = !!env;
+  if (BGC.key !== key) { if (env) { BGC.cv = env.cv; BGC.win = env.win; BGC.sky = null; }
+    else { const [cv2, x2] = texCanvas(W, H), c0 = c; c = x2; WINQ = []; try { drawGymStatic(t); } finally { BGC.win = WINQ; BGC.sky = null; WINQ = null; c = c0; } BGC.cv = cv2; }
+    BGC.key = key; }
   if (BGC.win.length && !BGC.sky) { let x0 = 1e9, y0 = 1e9, x1 = -1e9, y1 = -1e9, r = 1e9; BGC.win.forEach(a => { x0 = Math.min(x0, a[0]); y0 = Math.min(y0, a[1]); x1 = Math.max(x1, a[0] + a[2]); y1 = Math.max(y1, a[1] + a[3]); r = Math.min(r, a[2], a[3]); });
     BGC.sky = { x: x0, y: y0, w: x1 - x0, h: y1 - y0, r }; } // ein Himmel für alle Fenster
-  BGC.win.forEach(a => drawWindow(a[0], a[1], a[2], a[3], t, a[5], BGC.sky));
+  if (env) { // 3D: erst der gemeinsame Himmel, dann der Raum darüber (die Fenster sind im 3D-Bild durchsichtig, Rahmen & Sprossen kommen aus 3D)
+    BGC.win.forEach(a => drawWindow(a[0], a[1], a[2], a[3], t, 0, BGC.sky));
+    c.drawImage(BGC.cv, 0, 0, W, H); }
+  else { c.drawImage(BGC.cv, 0, 0, W, H);
+    BGC.win.forEach(a => drawWindow(a[0], a[1], a[2], a[3], t, a[5], BGC.sky)); }
   neonSigns(t, G);
   if (S.gym === 2) { const glow = .7 + Math.sin(t * 3) * .05; c.save(); c.shadowColor = '#14b8a6'; c.shadowBlur = 18; c.fillStyle = `rgba(20,184,166,${glow})`; c.font = `900 ${Math.max(18, H * .07)}px "Arial Black", Arial, sans-serif`; c.textAlign = 'center'; c.fillText('FIT+', W * .82, 64); c.restore(); }
   drawTrophyCase(t);
@@ -678,7 +693,17 @@ function renderFrame(p, fr) {
   if (prop === 'db') ['l', 'r'].forEach(h => dumbbell(R.ha[h].x, R.ha[h].y + 2 * k, k * .9, p.dbKg || 6, false, false));
   return { c: cv2, ox, oy, top: R.top, ha: R.ha };
 }
-function drawFrame(p, f, alpha) { if (!f) return false; if (alpha != null) c.globalAlpha = alpha; c.drawImage(f.c, p.x - f.ox, p.y - f.oy); c.globalAlpha = 1; p.topW = { x: p.x - f.ox + f.top.x, y: p.y - f.oy + f.top.y }; p.haW = { l: { x: p.x - f.ox + f.ha.l.x, y: p.y - f.oy + f.ha.l.y }, r: { x: p.x - f.ox + f.ha.r.x, y: p.y - f.oy + f.ha.r.y } }; return true; }
+/* 3D-Umgebung: weicher Silhouetten-Schatten einer 2D-Figur auf dem Boden. Licht kommt (wie im 3D-Raum) von vorne links oben,
+   also fällt der Schatten nach hinten rechts: Figur am Fußpunkt flach auf den Boden gekippt und geschert. Silhouette in ¼ Auflösung = weich. */
+function figShadow(img, dx, dy, dw, dh, fx, fy, a, cache) {
+  if (!Sc.env3dOn || MK.S.set.quality === 'niedrig' || !img || !dw || !dh) return;
+  let s = cache && cache._sh;
+  if (!s) { const w = Math.max(6, Math.round(dw / 4)), h = Math.max(6, Math.round(dh / 4)); s = cache ? document.createElement('canvas') : (Sc._shBuf || (Sc._shBuf = document.createElement('canvas')));
+    if (s.width !== w || s.height !== h) { s.width = w; s.height = h; } const x = s.getContext('2d'); x.globalCompositeOperation = 'source-over'; x.clearRect(0, 0, w, h); x.drawImage(img, 0, 0, w, h);
+    x.globalCompositeOperation = 'source-in'; x.fillStyle = '#1c1208'; x.fillRect(0, 0, w, h); if (cache) cache._sh = s; }
+  c.save(); c.globalAlpha = a; c.translate(fx, fy); c.transform(1, 0, -.5, .26, 0, 0); c.drawImage(s, dx - fx, dy - fy, dw, dh); c.restore();
+}
+function drawFrame(p, f, alpha) { if (!f) return false; if (alpha == null) figShadow(f.c, p.x - f.ox, p.y - f.oy, f.c.width, f.c.height, p.x, p.y, .22, f); if (alpha != null) c.globalAlpha = alpha; c.drawImage(f.c, p.x - f.ox, p.y - f.oy); c.globalAlpha = 1; p.topW = { x: p.x - f.ox + f.top.x, y: p.y - f.oy + f.top.y }; p.haW = { l: { x: p.x - f.ox + f.ha.l.x, y: p.y - f.oy + f.ha.l.y }, r: { x: p.x - f.ox + f.ha.r.x, y: p.y - f.oy + f.ha.r.y } }; return true; }
 function shadowAt(p) { contactShadow(p.x, p.y + 1, 38 * p.k, 7 * p.k, .38); }
 
 const SKINS = ['s1', 's2', 's3', 's4', 's5'], TOPS_M = ['tee-rot', 'tee-blau', 'tee-grau', 'tee-weiss', 'tank-schwarz', 'tank-gruen', 'hoodie', 'kompr'], TOPS_F = ['tank-schwarz', 'tee-weiss', 'hoodie', 'kompr', 'tank-gruen'];
@@ -1773,6 +1798,7 @@ Sc.drawGym = function (dt, t) {
     if (R0 && R0.foot) { const fl = R0.foot.l, fr = R0.foot.r, lift = Math.max(0, G.py - Math.max(fl.y, fr.y)); sx = (fl.x + fr.x) / 2; rx = Math.max(60 * G.pScale, Math.abs(fl.x - fr.x) * .7 + 50 * G.pScale); if (R0.lie) { sx = R0.hip.x; rx = 120 * G.pScale; } a = .5 * clamp(1 - lift / (180 * G.pScale), .3, 1); rx *= 1 - Math.min(.4, lift / (500 * G.pScale)); }
     const sk = 1 - Math.exp(-dt * 18); V0.shX = V0.shX == null ? sx : V0.shX + (sx - V0.shX) * sk; V0.shR = V0.shR == null ? rx : V0.shR + (rx - V0.shR) * sk; V0.shA = V0.shA == null ? a : V0.shA + (a - V0.shA) * sk;
     contactShadow(V0.shX, G.py + 2, V0.shR, 12 * G.pScale * (V0.shR / (82 * G.pScale)) ** .5, V0.shA); } // Schatten läuft mit
+  if (Sc.env3dOn && !pose.side && !pose.lie) { const sp = MK.Fig.sprite('player'); if (sp && Math.abs(sp.fy - G.py) < 2) figShadow(sp.cv, sp.x, sp.y, sp.w, sp.h, G.px, G.py + 1, .26); } // Figur wirft Schatten auf den 3D-Boden
   if (ex && ex.anim === 'run' && (V.ph >= 0 || true) && MK.exOpen(ex)) { EQDRAW.laufband(G.px, G.py + 6, G.pScale * 2.3, t); }
   const lay = Sc.layout(opts, G.px, G.py, G.pScale);
   let R;

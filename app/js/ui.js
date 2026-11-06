@@ -636,6 +636,7 @@ function paneOpt(P) {
     const sl = (id, lab, v) => `<label class="slider"><span>${lab}</span><input type="range" id="${id}" min="0" max="1" step="0.05" value="${v}"><b>${Math.round(v * 100)} %</b></label>`;
     h += sl('vVol', 'Gesamtlautstärke', S.set.vol) + sl('vMus', 'Musik', S.set.music) + sl('vSfx', 'Effekte', S.set.sfx);
     h += `<label class="sel"><span>Grafik</span><select id="vQ">${['hoch', 'mittel', 'niedrig'].map(q => `<option ${S.set.quality === q ? 'selected' : ''}>${q}</option>`).join('')}</select></label>
+      <label class="sel"><span>Umgebung ${ib('3D: Der Raum (Wände, Boden, Fenster, Lampen) ist 3D, Figuren bleiben 2D. Bisher nur im Vereinsgym – die anderen Räume bleiben 2D. Bei Grafik „niedrig“ oder ohne WebGL wird automatisch 2D genommen.')}</span><select id="vEnv"><option value="3d" ${S.set.env3d ? 'selected' : ''}>3D</option><option value="2d" ${S.set.env3d ? '' : 'selected'}>2D</option></select></label>
     <label class="autorow"><span class="sw2"><input type="checkbox" id="vEco" ${MK.ecoOn() ? 'checked' : ''}><span></span></span><b>Akku sparen</b> ${ib('Etwas geringere Auflösung, nichts läuft im Hintergrund (auf dem Handy standardmäßig an). Schaltest du es selbst ein, zeichnet das Spiel im Leerlauf zusätzlich weniger Bilder – beim Spielen bleibt es immer flüssig.')}</label>
       <label class="chk"><input type="checkbox" id="vRed" ${S.set.reduce ? 'checked' : ''}> Weniger Animationen</label>
       <label class="chk"><input type="checkbox" id="vNpc" ${S.set.npc !== false ? 'checked' : ''}> Leute & NPCs im Gym ${ib('Aus: keine Besucher, kein Rivale, kein Hausmeister. Kevin und der Barkeeper bleiben.')}</label>
@@ -660,6 +661,7 @@ function paneOpt(P) {
   if (optTab === 'set') {
     [['vVol', 'vol'], ['vMus', 'music'], ['vSfx', 'sfx']].forEach(([id, k]) => { const i = $(id); i.oninput = () => { S.set[k] = +i.value; i.nextElementSibling.textContent = Math.round(i.value * 100) + ' %'; MK.Audio.unlock(); MK.Audio.applyVol(); }; i.onchange = MK.save; });
     $('vQ').onchange = e => { S.set.quality = e.target.value; MK.save(); };
+    $('vEnv').onchange = e => { S.set.env3d = e.target.value === '3d'; MK.save(); if (S.set.env3d && MK.Env3D && MK.Env3D.state === 'fail') U.toast('3D geht auf diesem Gerät nicht – 2D bleibt aktiv'); };
     $('vEco').onchange = e => { S.set.eco = e.target.checked; MK.save(); MK.Scene.resize(); };
     $('vRed').onchange = e => { S.set.reduce = e.target.checked; MK.save(); };
     $('vNpc').onchange = e => { S.set.npc = e.target.checked; MK.save(); MK.Scene.buildCrowd(); };

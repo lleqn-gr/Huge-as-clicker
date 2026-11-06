@@ -1023,6 +1023,7 @@ button.bought,.btn.bought{animation:boughtPop .5s cubic-bezier(.3,1.9,.45,1)}
 .c-time.go{animation:tGo .45s cubic-bezier(.2,1.8,.4,1)}
 @keyframes tGo{30%{transform:scale(1.35)}}
 </style>
+<script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
 <script src="js/data.js"></script>
 <script src="js/lines.js"></script>
 <script src="js/art.js"></script>
@@ -1042,6 +1043,11 @@ button.bought,.btn.bought{animation:boughtPop .5s cubic-bezier(.3,1.9,.45,1)}
 <script src="js/ui.js"></script>
 <script src="js/fx.js"></script>
 <script src="js/main.js"></script>
+<script>
+/* 3D-Umgebung: wird erst geladen, wenn sie gebraucht wird (Option „Umgebung 3D“). Ohne WebGL bleibt alles 2D. */
+const E3 = window.MK.Env3D = window.MK.Env3D || { state: "idle" };
+E3.load = () => E3._p || (E3._p = (E3.state = "loading", import("./js/env3d/env3d.js").then(m => m.boot()).catch(e => { E3.state = "fail"; E3.err = String(e && e.message || e); console.warn("3D-Umgebung nicht verfügbar:", e); })));
+</script>
 <script>
 /* App-Modus: Offline-Speicher + Installieren (nur auf echter Webseite, nicht in Vorschauen) */
 (function(){ try {

@@ -291,6 +291,7 @@ function loop(now) {
   MK.tick(dt);
   const emp = !MK.Comp.cur && U.view && U.view() === 'biz'; if ($('stage').classList.contains('empire') !== emp) morphStage(() => { $('stage').classList.toggle('empire', emp); document.body.classList.toggle('empview', emp); Sc.resize(); });
   const wv = !MK.Comp.cur && U.tab && U.tab() === 'ward'; if ($('stage').classList.contains('wardview') !== wv) morphStage(() => { $('stage').classList.toggle('wardview', wv); document.body.classList.toggle('wardbody', wv); Sc.resize(); });
+  Sc.env3dOn = false; // wird nur im Gym mit 3D-Umgebung gesetzt
   if (MK.Comp.cur) MK.Comp.tick(dt, t); else if (emp) Sc.drawEmpire(dt, t); else if (wv) Sc.drawWard(dt, t); else Sc.drawGym(dt, t);
   perfGuard(performance.now() - c0, dt);
   MK.Fx.tick(dt);

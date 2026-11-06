@@ -54,6 +54,13 @@ Kommunikation zwischen Teilen: `MK.on(name, fn)` / `MK.emit(name, data)`.
 - Shop-/Reiter-Bereich: **kein Comic-Look** (Barlow-Schriften, klare Karten). Comic-Look nur in der Bühne und bei großen Momenten.
 - Knöpfe haben einen 3D-Drück-Effekt. An/Aus-Schalter: Knopf exakt mittig.
 
+## 3D-Richtung (Plan: 3D-UPDATE-PLAN.md, Branch `3d-umgebung`)
+- **Figur, NPCs, Rivale, Haustier und die Geräte, an denen trainiert wird, bleiben 2D.** Nur die **Umgebungen** werden 3D (Gym-Räume, Bühnen, Theken, Hintergrund-Geräte, Fenster/Himmel). Die alte 3D-Figur (Branch `3d-update`) wird nicht weiterverfolgt.
+- Code: `app/js/env3d/` (ES-Module, Three.js lokal in `app/vendor`). Der Raum wird einmal in ein Bild gerendert, scene.js zeichnet es statt des 2D-Hintergrunds (neu nur bei Gym-Stufe, Größe, Grafik-Stufe, Tag/Nacht).
+- Kamera wird aus der 2D-Szene abgeleitet (Fußpunkt, Figurengröße, Wandkante yF, Größen-Staffelung der Besucher) – damit 2D-Figuren nicht „draufgeklebt“ wirken.
+- Fenster sind im 3D-Bild durchsichtig; dahinter zeichnet scene.js den **einen** gemeinsamen Himmel (ein Mond/eine Sonne).
+- Optionen: „Umgebung 3D/2D“ (`S.set.env3d`). 2D bleibt Rückfall (ohne WebGL, Grafik „niedrig“, Räume ohne 3D-Version).
+
 ## Leistung (wichtig auch für 3D)
 - Muss auf Handys flüssig laufen. Es gibt `MK.dprCap` (dynamische Auflösung), Einstellung „Grafik: hoch/mittel/niedrig“ und „Akku sparen“.
 - Teure Dinge vorrendern/cachen, nichts pro Frame neu erzeugen, Canvas ausblenden wenn nichts passiert.
