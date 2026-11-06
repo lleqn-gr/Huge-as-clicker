@@ -53,6 +53,10 @@ Kommunikation zwischen Teilen: `MK.on(name, fn)` / `MK.emit(name, data)`.
 - In Imperium und Skillbaum fliegen keine Geldscheine/Hanteln.
 - Shop-/Reiter-Bereich: **kein Comic-Look** (Barlow-Schriften, klare Karten). Comic-Look nur in der Bühne und bei großen Momenten.
 - Knöpfe haben einen 3D-Drück-Effekt. An/Aus-Schalter: Knopf exakt mittig.
+- Farbkonzept Laden/Imperium/Übungsauswahl (Variablen `--k-*` in index.html): Sand-Fläche, weiße Karten mit warmem Rahmen; Knöpfe: Kaufen grün, Diamanten petrol, Nebenaktion weiß mit Rahmen, zu teuer grau.
+- Hantelscheiben im Profil (von der Seite) fast rechteckig mit nur leicht gerundeten Ecken; nur die Scheibenfläche ist rund.
+- Kühlschrank und Boombox sehen je Stufe (`S.eq.kuehl` / `S.eq.boombox`, 1–6) anders aus (Retro → modern → Glastür → Edelstahl-Doppeltür; Kassettenrekorder → Boombox → große Boombox → Anlage).
+- Spielstand übertragen: Code über Supabase (`app/js/transfer.js`, `app/js/cloud-config.js`, Einrichtung in `supabase/README.md`), Datei als Notlösung.
 
 ## 3D-Richtung (Plan: 3D-UPDATE-PLAN.md, Branch `3d-umgebung`)
 - **Figur, NPCs, Rivale, Haustier und die Geräte, an denen trainiert wird, bleiben 2D.** Nur die **Umgebungen** werden 3D (Gym-Räume, Bühnen, Theken, Hintergrund-Geräte, Fenster/Himmel). Die alte 3D-Figur (Branch `3d-update`) wird nicht weiterverfolgt.

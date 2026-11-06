@@ -29,7 +29,7 @@ function makeBell() {
   // Griff
   g = x.createLinearGradient(0, cy - 2.4, 0, cy + 2.4); g.addColorStop(0, '#f4f6f8'); g.addColorStop(.45, '#a9b0b8'); g.addColorStop(1, '#5d636b'); x.fillStyle = '#141414'; rr(x, 9, cy - 3, W - 18, 6, 2.5); x.fill(); x.fillStyle = g; rr(x, 9.8, cy - 2.2, W - 19.6, 4.4, 2); x.fill();
   x.strokeStyle = 'rgba(0,0,0,.25)'; x.lineWidth = .5; for (let i = 15; i < W - 15; i += 2) { x.beginPath(); x.moveTo(i, cy - 2); x.lineTo(i + 1, cy + 2); x.stroke(); } // Rändel
-  const plate = (px, w, h) => { x.fillStyle = '#141414'; rr(x, px - .8, cy - h / 2 - .8, w + 1.6, h + 1.6, 2.4); x.fill(); g = x.createLinearGradient(px, 0, px + w, 0); g.addColorStop(0, '#3b3e45'); g.addColorStop(.35, '#22242a'); g.addColorStop(1, '#0f1013'); x.fillStyle = g; rr(x, px, cy - h / 2, w, h, 1.8); x.fill();
+  const plate = (px, w, h) => { x.fillStyle = '#141414'; rr(x, px - .8, cy - h / 2 - .8, w + 1.6, h + 1.6, 1); x.fill(); g = x.createLinearGradient(px, 0, px + w, 0); g.addColorStop(0, '#3b3e45'); g.addColorStop(.35, '#22242a'); g.addColorStop(1, '#0f1013'); x.fillStyle = g; rr(x, px, cy - h / 2, w, h, .7); x.fill();
     x.fillStyle = 'rgba(255,255,255,.28)'; x.fillRect(px + .6, cy - h / 2 + 1.2, .9, h - 2.4); x.fillStyle = 'rgba(255,255,255,.18)'; x.fillRect(px + 1.5, cy - h / 2 + .8, w - 3, 1.1); };
   plate(3.2, 5.2, 15); plate(8.6, 3.6, 21); plate(W - 12.2, 3.6, 21); plate(W - 8.4, 5.2, 15);
   x.fillStyle = '#141414'; rr(x, 0, cy - 2.6, 3.4, 5.2, 1.2); x.fill(); rr(x, W - 3.4, cy - 2.6, 3.4, 5.2, 1.2); x.fill(); // Endkappen

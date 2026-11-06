@@ -1102,6 +1102,53 @@ button.bought,.btn.bought{animation:boughtPop .5s cubic-bezier(.3,1.9,.45,1)}
 .card.prep small,.mac small{font-size:11px}
 #skills .skreq li.ok{color:#5fd38d}
 .exchip .tch em{color:#4a4438}
+/* ===== Farbkonzept Laden · Imperium · Übungsauswahl (einheitlich, ohne Comic) =====
+   Sand-Fläche, weiße Karten mit klarem warmem Rahmen; Knöpfe nach Bedeutung: Kaufen grün, Diamanten petrol,
+   Nebenaktion weiß mit Rahmen, zu teuer grau. Alle Knöpfe behalten den 3D-Drück-Effekt (Kante unten). */
+:root{--k-bg:#efe6d3;--k-card:#ffffff;--k-line:#cfbf9c;--k-line2:#e2d6bb;--k-ink:#1d1a15;--k-mut:#5a5246;--k-buy:#1f8a4c;--k-buyD:#11603a;--k-dia:#0e7490;--k-diaD:#0a4f62;--k-off:#e6dfd0;--k-offD:#c4b89f;--k-offT:#6b6354;--k-sel:#fff3cc}
+.pane.clean{background:var(--k-bg)}
+.pane.clean .card,.kpi,.mile2,.seg,.opt2{border:1.5px solid var(--k-line)!important;box-shadow:0 2px 0 var(--k-line2)!important}
+.pane.clean .card{background:var(--k-card)}
+.pane.clean .locked2{background:#f6f1e6!important;border-style:dashed!important;box-shadow:none!important}
+.pane.clean .sec{margin-top:14px}.pane.clean .sec h3{font-size:19px}.pane.clean .sec p{color:var(--k-mut)}
+.pane.clean .eqr{border-top-color:var(--k-line2)}
+.pane.clean .bz-b{border-top:1.5px dashed var(--k-line)}
+/* Knöpfe */
+.pane.clean .btn,.train .wbtn{border:0!important;border-radius:10px;font-family:var(--ui);font-weight:800;letter-spacing:.2px;color:#fff!important;background:var(--k-buy)!important;box-shadow:0 3px 0 var(--k-buyD)!important;text-shadow:0 1px 0 rgba(0,0,0,.18)}
+.pane.clean .btn.dia{background:var(--k-dia)!important;box-shadow:0 3px 0 var(--k-diaD)!important}
+.pane.clean .btn.alt,.pane.clean .btn.xf-ghost{background:#fff!important;color:var(--k-ink)!important;box-shadow:0 0 0 1.5px var(--k-line) inset,0 3px 0 var(--k-line)!important;text-shadow:none}
+.pane.clean .btn.off,.pane.clean .btn:disabled{background:var(--k-off)!important;color:var(--k-offT)!important;box-shadow:0 0 0 1.5px var(--k-offD) inset,0 3px 0 var(--k-offD)!important;text-shadow:none}
+.pane.clean .btn:not(:disabled):not(.off):active,.train .wbtn:not(:disabled):active{transform:translateY(3px)!important;box-shadow:0 0 0 transparent!important}
+.pane.clean .btn::before{background:linear-gradient(180deg,rgba(255,255,255,.18),rgba(255,255,255,0) 60%)}
+.pane.clean .btn.off::before,.pane.clean .btn:disabled::before{display:none}
+/* Werte hervorheben */
+.pane.clean .fx{font-weight:800}.fx-m{background:#d9f0e2;color:#0d5530}.fx-x{background:#e8e1ff;color:#4a20b0}.fx-d{background:#d4eff6;color:#08566a}.fx-g{background:#fbe8b8;color:#6e4700}
+.pane.clean .sum{font-size:15.5px;font-weight:800;color:var(--k-buyD)}
+.kpi b{color:var(--k-ink)}.kpis .kpi:first-child b{color:var(--k-buyD)}
+.pane.clean .cnt{background:var(--k-ink)}
+.pane.clean .tile{box-shadow:inset 0 0 0 1.5px color-mix(in srgb,var(--t) 30%,transparent)}
+.seg button[aria-pressed="true"]{background:var(--k-ink)}
+/* ===== Übungsauswahl unter dem Gym ===== */
+.app .train{background:var(--k-bg)}
+.app .train .gchip{background:var(--k-card);border:1.5px solid var(--k-line);border-radius:10px;padding:8px 8px 7px;box-shadow:inset 0 4px 0 var(--c),0 2px 0 var(--k-line2);gap:3px;transform:none}
+.app .train .gchip b{font-family:var(--ui);font-weight:700;font-size:15px;letter-spacing:.1px;color:var(--k-ink)}
+.app .train .gchip small{font-family:var(--ui-body);font-size:12px;font-weight:600;color:var(--k-mut)}
+.app .train .gchip .mini{height:5px;border:0;border-radius:3px;background:#ece3cf}.app .train .gchip .mini i{background:var(--c);border-radius:3px}
+.app .train .gchip[aria-pressed="true"]{background:color-mix(in srgb,var(--c) 16%,#fff);border:2px solid var(--k-ink);box-shadow:inset 0 4px 0 var(--c),0 3px 0 var(--k-ink);transform:none}
+.app .train .gchip:disabled{background:#f6f1e6;border-style:dashed;box-shadow:none}.app .train .gchip:disabled b{color:var(--k-mut)}
+.app .train .gchip.plan{box-shadow:inset 0 4px 0 var(--c),inset 0 -3px 0 var(--blue),0 2px 0 var(--k-line2)}
+.app .train .exchip{background:var(--k-card);border:1.5px solid var(--k-line);border-radius:10px;padding:7px 12px 9px;box-shadow:0 2px 0 var(--k-line2)}
+.app .train .exchip b{font-family:var(--ui);font-weight:700;font-size:15px;color:var(--k-ink)}
+.app .train .exchip small{font-family:var(--ui-body);font-weight:600}
+.app .train .exchip[aria-pressed="true"]{background:var(--k-sel);border:2px solid var(--k-ink);box-shadow:0 3px 0 var(--k-ink)}
+.app .train .exchip:disabled{background:#f6f1e6;border-style:dashed;box-shadow:none}
+.app .train .exchip .tbar{left:10px;right:10px;width:auto;bottom:3px;height:3px;border-radius:2px}
+.app .train .wsel{background:var(--k-card);border:1.5px solid var(--k-line);border-radius:12px;padding:8px 10px;box-shadow:0 2px 0 var(--k-line2)}
+.app .train .winfo b{font-family:var(--ui);font-weight:800;font-size:24px;letter-spacing:.2px;color:var(--k-ink)}
+.app .train .winfo small{font-family:var(--ui-body);font-weight:600;color:var(--k-mut)}
+.app .train .wbtn{width:46px;height:46px;border-radius:50%;background:var(--k-ink)!important;color:#fff!important;font-family:var(--ui);font-weight:800;font-size:28px;box-shadow:0 3px 0 #000!important}
+.app .train .wbtn:disabled{background:var(--k-off)!important;color:var(--k-offT)!important;box-shadow:0 0 0 1.5px var(--k-offD) inset!important}
+.app .train .wnext,.app .train .whint{font-family:var(--ui-body);color:var(--k-mut)}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
 <script src="js/data.js"></script>

@@ -43,7 +43,7 @@ const ROOMS = [
   { wall: 'concrete', floor: 'concreteF', trim: '#5a5752', frame: '#2a3a44', light: 'bulb', mood: [.85, 1.6, '#ffe2b0'],
     wins: L => [[L.W * .34, 25, L.W * .2, L.yF * .24, 1]], mirror: [.03, .25], case: .66, slots: [[.6, .2], [.84, .22]] },
   { wall: 'brick', floor: 'planks', trim: '#5e4a2e', frame: '#5e4a2e', light: 'tubes', mood: [1.15, 2.2, '#fff1d6'],
-    wins: L => [.35, .515].map(fx => [L.W * fx, L.yF * .14, L.W * .135, L.yF * .38, 2]), mirror: [.03, .28], case: .91, slots: [[.72, .16], [.8, .5]] },
+    wins: L => [.35, .515].map(fx => [L.W * fx, L.yF * .14, L.W * .135, L.yF * .38, 2]), mirror: [.03, .28], case: .71, slots: [[.785, .2]] },
   { wall: 'panels', floor: 'rubber', trim: '#14b8a6', frame: '#c9d2d8', light: 'panels', mood: [1.35, 2.1, '#f2f8ff'],
     wins: L => [0, 1, 2].map(i => [L.W * (.335 + i * .11), 26, L.W * .095, L.yF * .62, 1]), mirror: [.03, .31], case: .7, slots: [[.88, .2]] },
   { wall: 'lamella', floor: 'rubberR', trim: '#d83a32', frame: '#0d0d10', light: 'spots', mood: [.7, 2.4, '#ffe8d0'],
@@ -152,7 +152,7 @@ export function buildRoom(gym, C, L, wx, wy, anchors, bar) {
   const posters = posterList(); R.slots.forEach(([fx, fy], i) => { const p = posters[i]; if (!p) return; const x = wx(C, L.W * fx, C.zw), Y = wy(C, L.yF * fy, C.zw) - .4;
     panel(g, texMat('poster:' + p.id + p.t2, 256, 360, posterPaint(p), { clamp: true }), tm('#141414'), x, Y, zW + .03, .48, .67, .02, .7); });
   trophyShelf(g, C, L, gym, wx, wy, zW, anchors);
-  const front = bar ? buildBar(g, C, L, wx, wy, zW, bar, gym) : null;
+  const front = bar ? buildBar(g, C, L, wx, wy, zW, bar, gym, anchors) : null;
   return { g, wins, front };
 }
 const signPaint = (txt, bg, fg) => (x, w, h) => { x.fillStyle = bg || '#6b4a2b'; x.fillRect(0, 0, w, h); x.fillStyle = 'rgba(255,255,255,.08)'; for (let i = 0; i < 6; i++) x.fillRect(0, i * h / 6, w, 2);
@@ -191,12 +191,21 @@ const fridgePaint = lvl => (x, w, h) => { const g = x.createLinearGradient(0, 0,
     for (let i = 0; i < n; i++) { const bw = w / n * .62, bx = (i + .2) * w / n, tall = (r + i) % 3 === 0, bh = rh * (tall ? .72 : .55); x.fillStyle = cols[(r * 3 + i) % cols.length]; x.beginPath(); x.roundRect(bx, sy - 4 - bh, bw, bh, 6); x.fill();
       if (tall) { x.fillStyle = '#222'; x.fillRect(bx + bw * .3, sy - 4 - bh - 6, bw * .4, 6); } x.fillStyle = 'rgba(255,255,255,.4)'; x.fillRect(bx + bw * .15, sy - 4 - bh * .85, bw * .18, bh * .6); } }
   x.fillStyle = 'rgba(255,255,255,.2)'; x.beginPath(); x.moveTo(0, 0); x.lineTo(w * .35, 0); x.lineTo(0, h * .55); x.fill(); x.strokeStyle = '#3a3d44'; x.lineWidth = 8; x.strokeRect(0, 0, w, h); };
-function buildBar(g, C, L, wx, wy, zW, B, gym) {
-  const st = B.st, front = new THREE.Group(), lvl = MK.S.eq.kuehl || 1;
-  // Kühlschrank an der Wand (Bildschirm-Rechteck wie in 2D)
-  { const z = C.zw - .35, x0 = wx(C, B.fx, z), x1 = wx(C, B.fx + B.fw, z), yT = wy(C, B.fy, z), yB = wy(C, B.fy + B.fh, z), w = x1 - x0, h = yT - yB;
-    box(g, tm('#1a1c21'), x0 + w / 2, yB + h / 2, -z, w, h, .6); panel(g, texMat('fridge' + lvl, 256, 512, fridgePaint(lvl), { clamp: true }), tm('#2a2d33'), x0 + w / 2, yB + h * .45, -z + .31, w * .86, h * .82, .02, 0);
-    box(g, glow(lvl >= 4 ? '#e6b422' : '#1fb5d6'), x0 + w / 2, yT - h * .05, -z + .31, w * .8, h * .025, .02, 0); box(g, tm('#c9ced4'), x0 + w * .88, yB + h * .45, -z + .34, .04, h * .3, .04, .4); }
+function buildBar(g, C, L, wx, wy, zW, B, gym, anchors) {
+  const st = B.st, front = new THREE.Group(), lvl = B.lvl || MK.S.eq.kuehl || 1;
+  // Kühlschrank hinter dem Barkeeper – Aussehen nach Stufe (wie in 2D): 1 Retro, 2 modern weiß, 3–4 Glastür-Kühler, 5–6 Edelstahl-Doppeltür mit Innenlicht
+  { const tier = lvl <= 1 ? 0 : lvl === 2 ? 1 : lvl <= 4 ? 2 : 3, z = C.zw - .35, x0 = wx(C, B.fx, z), x1 = wx(C, B.fx + B.fw, z), yT0 = wy(C, B.fy, z), yB = wy(C, B.fy + B.fh, z), w = x1 - x0, h0 = yT0 - yB, h = tier === 0 ? h0 * .72 : h0, cx = x0 + w / 2, zf = -z + .31;
+    const sy = B.fy + B.fh * (1 - h / h0); anchors.fridge = { x: B.fx, y: sy, w: B.fw, h: B.fy + B.fh - sy }; // Klickfläche = wo er wirklich steht
+    if (tier === 0) { box(g, tm('#e9e1c8'), cx, yB + h * .45, -z, w, h * .9, .6); cyl(g, tm('#e9e1c8'), cx, yB + h * .9, -z, w / 2, .6, 'z', 1).scale.set(w / 2, .6, h * .14);
+      box(g, tm('#b9ad8c', { rim: false }), cx, yB + h * .62, zf - .01, w * .96, .02, .01, 0); box(g, tm('#c9ced4'), cx + w * .38, yB + h * .75, zf, .05, h * .14, .05, .4); box(g, tm('#c9ced4'), cx + w * .38, yB + h * .38, zf, .05, h * .2, .05, .4); cyl(g, tm('#d83a32'), cx, yB + h * .8, zf, .07, .02, 'z', .4); }
+    else if (tier === 1) { box(g, tm('#f4f6f8'), cx, yB + h / 2, -z, w, h, .6); box(g, tm('#9aa3ad', { rim: false }), cx, yB + h * .7, zf - .01, w * .98, .02, .01, 0);
+      [.82, .45].forEach((fy, i) => box(g, tm('#8a939a'), cx + w * .38, yB + h * fy, zf, .05, h * (i ? .28 : .14), .05, .4)); box(g, tm('#1a2a32'), cx - w * .1, yB + h * .88, zf, w * .36, h * .06, .01, 0); box(g, glow('#7fe3ff'), cx - w * .1, yB + h * .88, zf + .006, w * .12, h * .03, .005, 0); }
+    else if (tier === 2) { box(g, tm('#1a1c21'), cx, yB + h / 2, -z, w, h, .6); panel(g, texMat('fridge' + lvl, 256, 512, fridgePaint(lvl), { clamp: true }), tm('#2a2d33'), cx, yB + h * .45, zf, w * .86, h * .82, .02, 0);
+      box(g, glow(lvl >= 4 ? '#e6b422' : '#1fb5d6'), cx, yB + h * .95, zf, w * .8, h * .025, .02, 0); box(g, tm('#c9ced4'), x0 + w * .88, yB + h * .45, zf + .03, .04, h * .3, .04, .4); }
+    else { box(g, tm('#c9ced4'), cx, yB + h / 2, -z, w, h, .6); [-1, 1].forEach(d => { const px = cx + d * w / 4;
+        panel(g, texMat('fridge6', 256, 512, fridgePaint(6), { clamp: true }), tm('#9aa3ad'), px, yB + h * .45, zf, w * .44, h * .82, .02, 0); box(g, glow('#fff4d0'), px, yB + h * .86, zf + .012, w * .4, h * .03, .005, 0); box(g, tm('#3a3d44'), px - d * w * .2, yB + h * .45, zf + .03, .035, h * .3, .04, .4); });
+      box(g, glow(lvl >= 6 ? '#a9c8ff' : '#e6b422'), cx, yB + h * .96, zf, w * .9, h * .02, .02, 0); }
+  }
   // Tresen: vorne lang (bis zum rechten Rand), links ein Schenkel nach hinten bis zur Wand
   const zf = C.f * C.h / Math.max(1, B.yF2 - C.cy), xa = wx(C, B.x0 + B.Fx, zf), xb = wx(C, B.x0 + B.Fx + B.lw, zf), xr = wx(C, B.x1 + 40, zf), Hc = B.fh0 * zf / C.f, dep = .62;
   const FR = tm(st.fr[0]), TOP = tm(st.top), ED = tm(st.edge);
