@@ -63,7 +63,7 @@ Kommunikation zwischen Teilen: `MK.on(name, fn)` / `MK.emit(name, data)`.
 - Updates der Windows-App (main.js): nur EINE Frage pro Version, „Jetzt neu starten“ → speichern, still installieren, App öffnet sich von allein; „Später“ → still beim Schließen. Merkdatei `update-state.json` im userData-Ordner.
 - Spielstand übertragen: Code über Supabase (`app/js/transfer.js`, `app/js/cloud-config.js`, Einrichtung in `supabase/README.md`), Datei als Notlösung.
 
-## 3D-Richtung (Plan: 3D-UPDATE-PLAN.md, Branch `3d-umgebung`)
+## 3D-Richtung (Plan: 3D-UPDATE-PLAN.md) – seit 07.11.2026 in main, alle Spieler haben 3D
 - **Figur, NPCs, Rivale, Haustier und die Geräte, an denen trainiert wird, bleiben 2D.** Nur die **Umgebungen** werden 3D (Gym-Räume, Bühnen, Theken, Hintergrund-Geräte, Fenster/Himmel). Die alte 3D-Figur (Branch `3d-update`) wird nicht weiterverfolgt.
 - Code: `app/js/env3d/` (ES-Module, Three.js lokal in `app/vendor`). Der Raum wird einmal in ein Bild gerendert, scene.js zeichnet es statt des 2D-Hintergrunds (neu nur bei Gym-Stufe, Größe, Grafik-Stufe, Tag/Nacht).
 - Kamera wird aus der 2D-Szene abgeleitet (Fußpunkt, Figurengröße, Wandkante yF, Größen-Staffelung der Besucher) – damit 2D-Figuren nicht „draufgeklebt“ wirken.
