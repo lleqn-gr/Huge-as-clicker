@@ -71,6 +71,7 @@ Die 3D-Figur aus dem alten Prototyp wird **nicht** weiterverfolgt.
 ## Phase 5b – Nachbesserungen nach Leons Feedback ✅
 - Gym: im Hintergrund nur die gekauften Geräte der gewählten Muskelgruppe, feste Stellplätze (links/rechts der Figur, nie in der Theke), weiche Überblendung beim Gruppenwechsel, je Gruppe vorgerendert und zwischengespeichert.
 - Kühlschrank in 3D hinter dem Barkeeper (Pokal-Regal frei), mit denselben Aussehens-Stufen wie in 2D.
+- Pokal-Regal in 3D höher an der Wand (über Boombox und Musiknoten); Höhe je Raum über `ROOMS[].caseY/caseH` (Vereinsgym: unter den Wimpeln).
 - Imperium-Stadt natürlich und fest per Spielstand (geschwungene Straßen, Ringe, Fluss, Parks, unregelmäßiger Rand).
 - Wachstum pro Kauf: Block/Stadt = ein Gebäude je Kauf im Bezirk des Geschäfts; ab 150 Käufen je Kauf eine neue Stadt (Land); ab 210 je Kauf ein Land (Erde); ab 370 je Kauf ein Planet (All). Kamera zoomt weich heraus, Neues ploppt hoch. Alles als Instanzen → bleibt flüssig.
 

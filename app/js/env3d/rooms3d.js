@@ -43,7 +43,7 @@ const ROOMS = [
   { wall: 'concrete', floor: 'concreteF', trim: '#5a5752', frame: '#2a3a44', light: 'bulb', mood: [.85, 1.6, '#ffe2b0'],
     wins: L => [[L.W * .34, 25, L.W * .2, L.yF * .24, 1]], mirror: [.03, .25], case: .66, slots: [[.6, .2], [.84, .22]] },
   { wall: 'brick', floor: 'planks', trim: '#5e4a2e', frame: '#5e4a2e', light: 'tubes', mood: [1.15, 2.2, '#fff1d6'],
-    wins: L => [.35, .515].map(fx => [L.W * fx, L.yF * .14, L.W * .135, L.yF * .38, 2]), mirror: [.03, .28], case: .71, slots: [[.785, .2]] },
+    wins: L => [.35, .515].map(fx => [L.W * fx, L.yF * .14, L.W * .135, L.yF * .38, 2]), mirror: [.03, .28], case: .71, caseY: .155, caseH: .215, slots: [[.785, .2]] }, // Regal unter den Wimpeln
   { wall: 'panels', floor: 'rubber', trim: '#14b8a6', frame: '#c9d2d8', light: 'panels', mood: [1.35, 2.1, '#f2f8ff'],
     wins: L => [0, 1, 2].map(i => [L.W * (.335 + i * .11), 26, L.W * .095, L.yF * .62, 1]), mirror: [.03, .31], case: .7, slots: [[.88, .2]] },
   { wall: 'lamella', floor: 'rubberR', trim: '#d83a32', frame: '#0d0d10', light: 'spots', mood: [.7, 2.4, '#ffe8d0'],
@@ -89,7 +89,8 @@ const TCOL = { bronze: ['#cd7f32', '#8a5320'], silber: ['#e3e8ee', '#9aa3ad'], g
 let CUP = null;
 function cupGeo() { if (CUP) return CUP; const pts = [[0, 0], [.42, 0], [.42, .08], [.14, .12], [.1, .3], [.12, .36], [.46, .5], [.5, 1], [.44, 1], [.4, .55], [0, .5]].map(([x, y]) => new THREE.Vector2(x, y)); CUP = new THREE.LatheGeometry(pts, 22); return CUP; }
 function trophyShelf(g, C, L, gym, wx, wy, zW, anchors) {
-  const S = MK.S, cx = L.W * ROOMS[gym].case, cw = Math.min(L.W * .14, 120), sy0 = L.yF * .14, chh = L.yF * .26;
+  // höher an der Wand als früher: darunter stehen Boombox (mit Musiknoten) und Theke, die das untere Fach sonst verdecken
+  const S = MK.S, cx = L.W * ROOMS[gym].case, cw = Math.min(L.W * .14, 120), sy0 = L.yF * (ROOMS[gym].caseY || .07), chh = L.yF * (ROOMS[gym].caseH || .25);
   if (!MK.TOURNEYS.some(T => S.trophies[T.id]) && S.fame < 10) return;
   const z = zW + .22, x0 = wx(C, cx - cw / 2, C.zw - .22), x1 = wx(C, cx + cw / 2, C.zw - .22), yT = wy(C, sy0, C.zw - .22), yB = wy(C, sy0 + chh, C.zw - .22), W = x1 - x0, H = yT - yB, xc = (x0 + x1) / 2;
   const wood = tm('#4a321c'), back = tm('#24303a', { rim: false });
