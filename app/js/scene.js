@@ -153,11 +153,16 @@ Sc.wgEq = id => wgEq(id);
    links zwischen Spiegel und Figur, rechts zwischen Figur und Theke; nie mittig hinter der Figur, nie in der Theke. */
 Sc.eqPlaces3d = g => { const G = Sc.geo();
   const owned = MK.EQUIP.filter(q => MK.S.eq[q.id] && EQDRAW[q.id] && !FIXED[q.id] && MK.eqUses(q).some(e => e.g === g)).map(q => q.id);
-  const barR = MK.S.eq.kuehl ? ((Sc.barX0 || W * .66) - 14) / W : .95, ivs = [[.05, .4], [.6, barR]].filter(([a, b]) => b - a > .1), tot = ivs.reduce((s, [a, b]) => s + b - a, 0);
-  let rest = owned.length; const xs = [];
-  ivs.forEach(([a, b], i) => { const n = i === ivs.length - 1 ? rest : Math.min(rest, Math.round(owned.length * (b - a) / tot)); rest -= n; for (let k = 0; k < n; k++) xs.push({ x: a + (b - a) * (k + .5) / n, gap: (b - a) / n }); });
-  return owned.map((id, i) => { const p = xs[i] || { x: .5, gap: 1 }, front = p.gap < .11 && i % 2 === 1; // eng → jedes zweite Gerät eine Reihe nach vorn
-    return { id, sx: p.x * W, sy: G.yF + (front ? 10 : -8), d: front ? 1 : 0, lv: MK.S.eq[id] || 1, wg: wgEq(id) }; }); };
+  // freie Bereiche: links neben der Figur, rechts bis zur Theke (zu schmal → nur links)
+  const barR = MK.S.eq.kuehl ? ((Sc.barX0 || W * .66) - 14) / W : .95, ivs = [[.04, .37], [.63, barR]].filter(([a, b]) => b - a >= .12), tot = ivs.reduce((t, [a, b]) => t + b - a, 0);
+  const minGap = Math.max(.1, 90 / Math.max(1, W)); // Mindestabstand je Gerät in einer Reihe
+  let rest = owned.length; const slots = [];
+  ivs.forEach(([a, b], i) => { const n = i === ivs.length - 1 ? rest : Math.min(rest, Math.round(owned.length * (b - a) / tot)); rest -= n; if (!n) return;
+    const fit = Math.max(1, Math.floor((b - a) / minGap));
+    if (n <= fit) for (let k = 0; k < n; k++) slots.push({ x: a + (b - a) * (k + .5) / n, row: 0 });
+    else { const nb = Math.ceil(n / 2), nf = n - nb; for (let k = 0; k < nb; k++) slots.push({ x: a + (b - a) * (k + .5) / nb, row: 0 }); for (let k = 0; k < nf; k++) slots.push({ x: a + (b - a) * (k + 1) / (nb + (nb === nf ? 1 : 0)), row: 1 }); } });
+  return owned.map((id, i) => { const p = slots[i] || { x: .2, row: 1 };
+    return { id, sx: p.x * W, sy: G.yF + (p.row ? 12 : -8), d: p.row, lv: MK.S.eq[id] || 1, wg: wgEq(id) }; }); };
 function wgEq(id) { const gs = [...new Set(MK.EXERCISES.filter(e => e.eq === id).map(e => e.g))]; return gs.length ? Math.max(...gs.map(g => MK.wg ? MK.wg(g) : 1)) : Math.max(1, MK.S.wset || 1); }
 function stackW(x, yTop, yBot, k, n) { // Gewichtsblock im Hintergrund: dicke schwarze Platten, eckig mit leicht runden Ecken
   const N = 9, ph = 6.4 * k, gap = 1.1 * k, w = 24 * k, nn = Math.max(1, Math.min(N, n));
@@ -738,7 +743,12 @@ function drawEquipment(t) {
   const G = Sc.geo(), k = G.bg * .9;
   // drei Tiefen (Wand, Raummitte, vorne), hinten zuerst – und nie hinter der Theke: rechter Rand endet vor ihr
   const L = eqLayout(), DY = [-8, 10, 27], DS = [.8, .92, 1.04], barL = MK.S.eq.kuehl ? (Sc.barX0 || W * .66) - 8 * k : W + 999;
-  if (Sc.env3dOn && Sc._env && Sc._env.eq) { c.drawImage(Sc._env.eq, 0, 0, W, H); // 3D-Geräte als eigene Ebene, vor dem Spiegel
+  let eqA = 1; // Muskelgruppe gewechselt → alte Geräte blenden weich aus, neue ein
+  if (Sc.env3dOn && Sc._env) { const k3 = Sc._env.eqKey || '';
+    if (Sc._eqK !== k3) { if (Sc._eqK != null && Sc._eqCv && !MK.S.set.reduce) { const f = (Sc._eqFade && Sc._eqFade.cv) || document.createElement('canvas'); f.width = Sc._eqCv.width; f.height = Sc._eqCv.height; const fx2 = f.getContext('2d'); fx2.clearRect(0, 0, f.width, f.height); fx2.drawImage(Sc._eqCv, 0, 0); Sc._eqFade = { cv: f, t0: performance.now() }; } else Sc._eqFade = null; Sc._eqK = k3; }
+    Sc._eqCv = Sc._env.eq;
+    if (Sc._eqFade) { const fk = (performance.now() - Sc._eqFade.t0) / 450; if (fk >= 1) Sc._eqFade = null; else { eqA = fk * fk * (3 - 2 * fk); c.save(); c.globalAlpha = 1 - eqA; c.drawImage(Sc._eqFade.cv, 0, 0, W, H); c.restore(); } } }
+  if (Sc.env3dOn && Sc._env && Sc._env.eq) { c.save(); c.globalAlpha = eqA; c.drawImage(Sc._env.eq, 0, 0, W, H); c.restore(); // 3D-Geräte als eigene Ebene, vor dem Spiegel
     // Kabelzug: Seil + Griff live, schwingen leicht (Grafik „hoch“), sonst ruhig
     const sw = MK.S.set.quality === 'hoch' && !MK.S.set.reduce, tt = performance.now() / 1000;
     Sc._env.anchors.eq.forEach((a, j) => (a.cables || []).forEach((q, i) => { const an = sw ? Math.sin(tt * 1.3 + i * 2.1 + j) * .07 + Math.sin(tt * 2.9 + j) * .025 : 0, ex = q.x + Math.sin(an) * q.len, ey = q.y + Math.cos(an) * q.len, hw = Math.max(3, q.len * .09);
