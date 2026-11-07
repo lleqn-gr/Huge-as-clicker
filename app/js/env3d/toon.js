@@ -76,8 +76,12 @@ export function toon(color, o) {
 // Umriss: Rückseiten der Form, im Bild nach außen geschoben → überall gleich dicke Comic-Linie
 const OUT_VS = `uniform vec2 uRes; uniform float uW; uniform float uK;
 void main() {
-  vec4 mv = modelViewMatrix * vec4(position, 1.0);
-  vec3 n = normalize(normalMatrix * normal);
+  vec4 p0 = vec4(position, 1.0); vec3 n0 = normal;
+  #ifdef USE_INSTANCING
+  p0 = instanceMatrix * p0; n0 = mat3(instanceMatrix) * n0;
+  #endif
+  vec4 mv = modelViewMatrix * p0;
+  vec3 n = normalize(normalMatrix * n0);
   vec4 clip = projectionMatrix * mv;
   vec2 d = (projectionMatrix * vec4(n, 0.0)).xy; float l = length(d); d = l > 1e-5 ? d / l : vec2(0.0);
   clip.xy += d * uW * uK * 2.0 * clip.w / uRes;

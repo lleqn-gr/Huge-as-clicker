@@ -68,6 +68,12 @@ Die 3D-Figur aus dem alten Prototyp wird **nicht** weiterverfolgt.
 - Übergang Gym → Imperium als kurze Kamerafahrt aus dem Gym-Fenster über die Stadt.
 - Figur und NPCs bleiben 2D; Leistung: Stadt nur rendern, wenn sichtbar, auf dem Handy mit reduzierter Auflösung.
 
+## Phase 5b – Nachbesserungen nach Leons Feedback ✅
+- Gym: im Hintergrund nur die gekauften Geräte der gewählten Muskelgruppe, feste Stellplätze (links/rechts der Figur, nie in der Theke), weiche Überblendung beim Gruppenwechsel, je Gruppe vorgerendert und zwischengespeichert.
+- Kühlschrank in 3D hinter dem Barkeeper (Pokal-Regal frei), mit denselben Aussehens-Stufen wie in 2D.
+- Imperium-Stadt natürlich und fest per Spielstand (geschwungene Straßen, Ringe, Fluss, Parks, unregelmäßiger Rand).
+- Wachstum pro Kauf: Block/Stadt = ein Gebäude je Kauf im Bezirk des Geschäfts; ab 150 Käufen je Kauf eine neue Stadt (Land); ab 210 je Kauf ein Land (Erde); ab 370 je Kauf ein Planet (All). Kamera zoomt weich heraus, Neues ploppt hoch. Alles als Instanzen → bleibt flüssig.
+
 ## Phase 5 – Feinschliff & Leistung ✅
 - Grafik-Stufen:
   - hoch: Live-Effekte, volle Auflösung

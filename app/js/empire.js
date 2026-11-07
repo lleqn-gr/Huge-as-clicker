@@ -334,7 +334,7 @@ function city3d(c, x0, y0, W, H, st) {
   const cv = E.cityCv || (E.cityCv = document.createElement('canvas'));
   if (enter || now - (E.city3dT || 0) > (S.set.quality === 'hoch' ? 33 : 50) || cv.width === 0) {
     let r = null; try { r = E3.city({ W, H, st, dpr: c.canvas.width / Sc.W, q: S.set.quality, reduce: S.set.reduce, enter }); } catch (e) { console.error('3D-Stadt:', e); E3.city = null; return false; }
-    if (!r) return false; E.city3dT = now; E.fly = r.fly; if (cv.width !== r.cv.width || cv.height !== r.cv.height) { cv.width = r.cv.width; cv.height = r.cv.height; } const x = cv.getContext('2d'); x.clearRect(0, 0, cv.width, cv.height); x.drawImage(r.cv, 0, 0); }
+    if (!r) return false; E.city3dT = now; E.fly = r.fly; E.lvl3d = r.stage; if (cv.width !== r.cv.width || cv.height !== r.cv.height) { cv.width = r.cv.width; cv.height = r.cv.height; } const x = cv.getContext('2d'); x.clearRect(0, 0, cv.width, cv.height); x.drawImage(r.cv, 0, 0); }
   c.drawImage(cv, x0, y0, W, H);
   // Blick aus dem Gym-Fenster: Fensterrahmen fliegt beim Betreten nach außen weg
   const f = E.fly || 0; if (f > .02 && !S.set.reduce) { const k = 1 + (1 - f) * 2.6, cx = x0 + W / 2, cy = y0 + H / 2, w = W * .62 * k, h = H * .9 * k, t = Math.max(8, 14 * k);
@@ -393,7 +393,7 @@ Sc.drawEmpire = function (dt, t) {
   const c = Sc.ctx(); if (!c) return; const W = Sc.W, H = Sc.H, dpr = c.canvas.width / W;
   c.setTransform(dpr, 0, 0, dpr, 0, 0);
   c.fillStyle = '#1e2027'; c.fillRect(0, 0, W, H);
-  const st = stageOf(); if (E.stage >= 0 && st > E.stage) { E.stageAnim = 1; MK.Audio.play('level'); } E.stage = st; E.stageAnim = Math.max(0, E.stageAnim - dt * .5);
+  const use3 = E.lvl3d != null && performance.now() - (E.last3d || -1e9) < 1500, st = use3 ? E.lvl3d : stageOf(); if (E.stage >= 0 && st > E.stage) { E.stageAnim = 1; MK.Audio.play('level'); } E.stage = st; E.stageAnim = Math.max(0, E.stageAnim - dt * .5);
   const mapH = Math.round(H * .34), tkH = 20; cityMap(c, 0, 0, W, mapH, t, st);
   c.fillStyle = INK; c.fillRect(0, mapH, W, 3); ticker(c, W, mapH + 3, tkH, dt);
   // Reihen
