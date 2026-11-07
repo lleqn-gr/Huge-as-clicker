@@ -667,6 +667,10 @@ h1{color:var(--acc2);-webkit-text-stroke:2px var(--ink);text-shadow:4px 4px 0 va
 .pane .btn[data-pr].dia{background:#1590b0;color:#fff}
 .pane .btn[data-pr].off,.pane .btn[data-pr]:disabled{background:#d9d0bb;color:#8a8270;box-shadow:none}
 #cv{-webkit-touch-callout:none}
+/* Spielversion klein neben dem Diamanten-Shop */
+.ver{align-self:center;font-family:var(--ui-body,system-ui);font-weight:700;font-size:11px;line-height:1;color:#d8d2c4;background:#000;border:1px solid #3a3a3a;border-radius:6px;padding:4px 7px;white-space:nowrap;letter-spacing:.3px}
+.ver:empty{display:none}
+@media (max-width:900px){.stats.hrow{position:relative}.ver{position:absolute;top:9px;right:9px;font-size:10px;padding:3px 5px;z-index:2}.stats.hrow .chip.hc.c-power{padding-right:74px!important}}
 </style>
 
 <div class="app">
@@ -680,6 +684,7 @@ h1{color:var(--acc2);-webkit-text-stroke:2px var(--ink);text-shadow:4px 4px 0 va
       <button class="chip hc hb c-sp" id="spBtn"><i class="hic" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="5" r="2.4"/><circle cx="5.5" cy="18" r="2.4"/><circle cx="18.5" cy="18" r="2.4"/><circle cx="12" cy="13" r="2.4"/><path d="M12 7.4v3.2M10.3 14.7l-3.2 1.6M13.7 14.7l3.2 1.6"/></svg></i><span class="htx"><small><span class="lf">Skillbaum</span><span class="ls">Skills</span></small><b><span id="sp">0</span> SP</b></span></button>
       <button class="chip hc hb c-lab" id="labBtn" aria-label="Labor"><i class="hic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9.5 3h5M10.5 3v5.5L5 18.5A1.8 1.8 0 006.6 21h10.8a1.8 1.8 0 001.6-2.5L13.5 8.5V3M7.6 14h8.8"/></svg></i><span class="htx"><small>Labor</small><b id="labTxt">–</b></span></button>
       <button class="chip hc hb c-shop" id="dshopBtn" aria-label="Shop: Diamanten, Haustiere, Mitarbeiter"><i class="hic" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M4 8h16l-1.4 11.2a2 2 0 01-2 1.8H7.4a2 2 0 01-2-1.8zM8.5 8a3.5 3.5 0 017 0"/></svg></i><span class="htx"><small>Shop</small><b>💎</b></span></button>
+      <span class="ver" id="ver" title="Spielversion"></span>
     </div>
   </header>
 
@@ -1107,7 +1112,9 @@ button.bought,.btn.bought{animation:boughtPop .5s cubic-bezier(.3,1.9,.45,1)}
    Nebenaktion weiß mit Rahmen, zu teuer grau. Alle Knöpfe behalten den 3D-Drück-Effekt (Kante unten). */
 :root{--k-bg:#efe6d3;--k-card:#ffffff;--k-line:#cfbf9c;--k-line2:#e2d6bb;--k-ink:#1d1a15;--k-mut:#5a5246;--k-buy:#1f8a4c;--k-buyD:#11603a;--k-dia:#0e7490;--k-diaD:#0a4f62;--k-off:#e6dfd0;--k-offD:#c4b89f;--k-offT:#6b6354;--k-sel:#fff3cc}
 .pane.clean{background:var(--k-bg)}
-.pane.clean .card,.kpi,.mile2,.seg,.opt2{border:1.5px solid var(--k-line)!important;box-shadow:0 2px 0 var(--k-line2)!important}
+.pane.clean .seg,.pane.clean .opt2{border:1.5px solid var(--k-line)!important;box-shadow:0 2px 0 var(--k-line2)!important}
+/* Karten mit klarem schwarzem Rahmen, damit sie sich deutlich von der Sand-Fläche abheben */
+.pane.clean .card,.pane.clean .kpi,.pane.clean .mile2{border:2px solid var(--k-ink)!important;box-shadow:0 3px 0 rgba(29,26,21,.22)!important}
 .pane.clean .card{background:var(--k-card)}
 .pane.clean .locked2{background:#f6f1e6!important;border-style:dashed!important;box-shadow:none!important}
 .pane.clean .sec{margin-top:14px}.pane.clean .sec h3{font-size:19px}.pane.clean .sec p{color:var(--k-mut)}
@@ -1149,6 +1156,66 @@ button.bought,.btn.bought{animation:boughtPop .5s cubic-bezier(.3,1.9,.45,1)}
 .app .train .wbtn{width:46px;height:46px;border-radius:50%;background:var(--k-ink)!important;color:#fff!important;font-family:var(--ui);font-weight:800;font-size:28px;box-shadow:0 3px 0 #000!important}
 .app .train .wbtn:disabled{background:var(--k-off)!important;color:var(--k-offT)!important;box-shadow:0 0 0 1.5px var(--k-offD) inset!important}
 .app .train .wnext,.app .train .whint{font-family:var(--ui-body);color:var(--k-mut)}
+/* ===== Küche / Meal-Prep (gleicher Stil wie der Laden) ===== */
+.pane.clean .card.prep{border-left-width:2px!important;gap:10px;padding:12px}
+.card.prep .phead{display:flex;align-items:center;justify-content:space-between;gap:8px}
+.card.prep .pleft{font-family:var(--ui);font-weight:800;font-size:14px;color:var(--k-ink);background:var(--k-sel);border:1.5px solid var(--k-line);border-radius:999px;padding:3px 10px}
+.psteps{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr 1fr 1.4fr;gap:6px}
+.psteps li{display:flex;align-items:center;gap:6px;font-family:var(--ui);font-weight:700;font-size:13.5px;color:var(--k-mut);background:#f6f1e6;border:1.5px solid var(--k-line2);border-radius:10px;padding:6px 8px;line-height:1.1}
+.psteps li b{flex:none;display:grid;place-items:center;width:22px;height:22px;border-radius:50%;background:#fff;border:1.5px solid var(--k-line);color:var(--k-mut);font-size:13px}
+.psteps li.cur{background:var(--k-sel);border-color:var(--k-ink);color:var(--k-ink)}
+.psteps li.cur b{background:var(--k-ink);border-color:var(--k-ink);color:#fff}
+.psteps li.done{color:var(--k-buyD)}.psteps li.done b{background:var(--k-buy);border-color:var(--k-buy);color:#fff}
+.seg.pgoal{display:flex;align-self:flex-start}.seg.pgoal button{font-size:14.5px;padding:7px 14px}
+.pslots{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pslot{display:flex;align-items:center;justify-content:center;gap:6px;min-height:38px;border:2px dashed var(--k-line);border-radius:10px;font-family:var(--ui);font-weight:800;font-size:15px;color:#7d7058;background:#fbf8f1}
+.pslot.on{border:2px solid var(--k-ink);background:#fff;color:var(--k-ink);cursor:pointer;padding:4px 8px}
+.pslot.on i{font-style:normal;color:var(--k-mut);font-size:16px}
+.pfoods{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.pfood{display:flex;flex-direction:column;align-items:flex-start;gap:1px;text-align:left;background:#fff;border:1.5px solid var(--k-line);border-radius:10px;padding:7px 9px;box-shadow:0 2px 0 var(--k-line2);cursor:pointer;color:var(--k-ink)}
+.pfood b{font-family:var(--ui);font-weight:700;font-size:14.5px}
+.pfood small{font-family:var(--ui-body);font-size:11.5px;font-weight:600;color:var(--k-mut)}
+.pfood[aria-pressed="true"]{background:#e3f4e9;border:2px solid var(--k-buy);box-shadow:0 2px 0 var(--k-buyD)}
+.pfood:disabled{opacity:.45;cursor:default;box-shadow:none}
+.pfood:not(:disabled):active{transform:translateY(2px);box-shadow:none}
+.card.prep .mac b{border:1.5px solid var(--k-line);border-radius:6px;background:#f3eee3;height:13px}
+.card.prep .mac b i{border-radius:5px 0 0 5px;background:#7cc59a}.card.prep .mac b.near i{background:#e2b23a}.card.prep .mac b.hit i{background:var(--k-buy)}
+.card.prep .mac b em{background:#d23a2a;width:3px;border-radius:2px}
+.card.prep .mac span{font-family:var(--ui);font-weight:700;font-size:13.5px;color:var(--k-ink)}
+.ptiers{display:grid;grid-template-columns:repeat(3,1fr);gap:6px}
+.ptier{display:flex;flex-direction:column;align-items:center;font-family:var(--ui-body);font-size:12px;font-weight:600;color:var(--k-mut);background:#f6f1e6;border:1.5px solid var(--k-line2);border-radius:10px;padding:4px 4px 5px;line-height:1.15}
+.ptier b{font-family:var(--ui);font-size:15px;font-weight:800;color:var(--k-mut)}
+.ptier.on{background:#e3f4e9;border-color:var(--k-buy);color:var(--k-buyD)}.ptier.on b{color:var(--k-buyD)}
+.pres{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:10px;border-top:1.5px dashed var(--k-line)}
+.pscore{font-family:var(--ui);font-weight:800;font-size:26px;line-height:1;color:var(--k-mut);display:flex;flex-direction:column}
+.pscore small{font-family:var(--ui-body);font-size:12.5px;font-weight:700;margin-top:2px}
+.pscore.g100{color:#b8860b}.pscore.g90{color:var(--k-buyD)}.pscore.g70{color:#a86a00}.pscore.g0{color:#b3261e}
+.pane.clean .pres .btn{font-size:17px;padding:9px 22px}
+.card.prep .prepstat{margin:0}.card.prep .prepstat span{border:1.5px solid var(--k-line);font-family:var(--ui-body)}
+.pane.clean .meals{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.pane.clean .card.meal{border-left-width:2px!important}
+.pane.clean .card.meal .row{align-items:center}
+@media (max-width:420px){.pfoods{grid-template-columns:1fr 1fr}.pane.clean .meals{grid-template-columns:1fr}.psteps li{font-size:12.5px;padding:5px 6px}}
+/* ===== Sponsor unterschrieben (großer Moment, Comic-Look erlaubt) ===== */
+.sdeal{position:absolute;inset:0;z-index:30;pointer-events:none;overflow:hidden;background:radial-gradient(circle at 50% 42%,rgba(0,0,0,.25),rgba(0,0,0,.6));animation:sdBg 3.7s ease forwards}
+@keyframes sdBg{0%{opacity:0}8%{opacity:1}72%{opacity:1}100%{opacity:0}}
+.sd-card{position:absolute;left:50%;top:44%;width:min(300px,72%);padding:14px 16px 16px;background:#fffdf6;border:3px solid #141414;border-radius:6px;box-shadow:6px 6px 0 #141414;display:flex;flex-direction:column;gap:7px;transform:translate(-50%,-50%);animation:sdDrop .5s cubic-bezier(.2,1.5,.4,1) both}
+@keyframes sdDrop{0%{transform:translate(-50%,-160%) rotate(-14deg);opacity:0}100%{transform:translate(-50%,-50%) rotate(-3deg);opacity:1}}
+.sdeal.fly .sd-card{animation:sdFly .45s cubic-bezier(.5,0,.8,.4) forwards}
+@keyframes sdFly{0%{left:50%;top:44%;transform:translate(-50%,-50%) rotate(-3deg) scale(1)}100%{left:var(--tx);top:var(--ty);transform:translate(-50%,-50%) rotate(20deg) scale(.06);opacity:.6}}
+.sd-logo{align-self:center;font-family:"Arial Narrow",Arial,sans-serif;font-weight:900;letter-spacing:2px;font-size:22px;color:var(--si);background:var(--sc);border:3px solid #141414;padding:5px 14px;box-shadow:3px 3px 0 #141414}
+.sd-t{font-family:var(--display);font-weight:400;font-size:24px;letter-spacing:1px;text-align:center;color:#141414;text-transform:uppercase}
+.sd-l{display:block;height:5px;border-radius:3px;background:#e2dccd}.sd-l.s{width:70%}
+.sd-sl{border-bottom:2px solid #141414;height:40px;margin-top:4px}
+.sd-sig{width:62%;height:40px;display:block;margin-left:6%}
+.sd-sig path{fill:none;stroke:#1d3fb0;stroke-width:3;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:420;stroke-dashoffset:420;animation:sdSig .8s .55s ease-in-out forwards}
+@keyframes sdSig{to{stroke-dashoffset:0}}
+.sd-stamp{position:absolute;right:10px;bottom:12px;font-family:var(--display);font-size:38px;letter-spacing:2px;color:#d6262b;border:4px solid #d6262b;border-radius:8px;padding:0 10px;background:rgba(255,255,255,.6);opacity:0;transform:rotate(-14deg) scale(3);animation:sdStamp .22s 1.35s cubic-bezier(.3,1.4,.5,1) forwards}
+@keyframes sdStamp{to{opacity:.95;transform:rotate(-14deg) scale(1)}}
+.sd-fl{position:absolute;width:150px;height:150px;margin:-75px 0 0 -75px;border-radius:50%;background:radial-gradient(circle,#fff 0 12%,rgba(255,255,255,.85) 22%,rgba(255,255,255,0) 62%);opacity:0;animation:sdFl .28s ease-out both}
+@keyframes sdFl{0%{opacity:0;transform:scale(.3)}25%{opacity:1;transform:scale(1)}100%{opacity:0;transform:scale(1.25)}}
+.sd-ring{position:absolute;left:var(--tx);top:var(--ty);width:30px;height:30px;margin:-15px 0 0 -15px;border-radius:50%;border:5px solid var(--sc);box-shadow:0 0 0 3px #fff;opacity:0;animation:sdRing .7s 2.8s ease-out forwards}
+@keyframes sdRing{0%{opacity:1;transform:scale(.4)}100%{opacity:0;transform:scale(7)}}
 </style>
 <script type="importmap">{"imports":{"three":"./vendor/three.module.js"}}</script>
 <script src="js/data.js"></script>
@@ -1178,6 +1245,8 @@ E3.load = () => E3._p || (E3._p = (E3.state = "loading", import("./js/env3d/env3
 <script>
 /* App-Modus: Offline-Speicher + Installieren (nur auf echter Webseite, nicht in Vorschauen) */
 (function(){ try {
+  /* Spielversion: die Windows-App hängt sie an die Adresse an (?v=1.0.123) */
+  var v = new URLSearchParams(location.search).get('v'); MK.VERSION = v || ''; var ve = document.getElementById('ver'); if (ve) ve.textContent = v ? 'v' + v : 'Web';
   MK.pwa = { prompt: null, standalone: matchMedia('(display-mode: standalone)').matches || navigator.standalone === true || /Electron/.test(navigator.userAgent) };
   addEventListener('beforeinstallprompt', function(e){ e.preventDefault(); MK.pwa.prompt = e; });
   addEventListener('appinstalled', function(){ MK.pwa.prompt = null; MK.pwa.standalone = true; });
