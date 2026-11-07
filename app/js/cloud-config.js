@@ -4,6 +4,6 @@
    Leer lassen = Online-Übertragung aus, die Datei-Lösung funktioniert trotzdem. */
 window.MK = window.MK || {};
 MK.CLOUD = {
-  url: '',   // z. B. 'https://abcdefghijkl.supabase.co'
-  key: ''    // öffentlicher Schlüssel (sb_publishable_… oder anon-Key eyJ…) – NIE den service_role / secret Key!
+  url: 'https://dgvodswimhbidhvxdhqw.supabase.co',
+  key: 'sb_publishable_yXSGgs87o4qTY8jX-gv7_A_teRV3GLW'    // öffentlicher Schlüssel (sb_publishable_… oder anon-Key eyJ…) – NIE den service_role / secret Key!
 };
