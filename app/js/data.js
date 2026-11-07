@@ -465,8 +465,8 @@ MK.FOODS = [
   { id: 'thunfisch', name: 'Thunfisch', p: 26, c: 0, f: 1 },  { id: 'suesskart', name: 'Süßkartoffel', p: 2, c: 20, f: 0 }, { id: 'nuesse', name: 'Nüsse', p: 18, c: 14, f: 55 }
 ];
 MK.PREP_GOALS = [
-  { id: 'masse', name: 'Masse',      t: [.25, .55, .2], desc: 'Ab 70 %: +1 % Körperfett (mehr Gewicht, mehr XP) · ab 90 %: zusätzlich Geld' },
-  { id: 'defi',  name: 'Definition', t: [.45, .35, .2], desc: 'Ab 70 %: −1 % Körperfett (für Wettkämpfe) · ab 90 %: zusätzlich Geld' }
+  { id: 'masse', name: 'Masse',      t: [.25, .55, .2], tol: .035, desc: 'Ab 70 %: +1 % Körperfett (mehr Gewicht, mehr XP) · ab 90 %: zusätzlich Geld' },
+  { id: 'defi',  name: 'Definition', t: [.45, .35, .2], tol: .058, desc: 'Ab 70 %: −1 % Körperfett (für Wettkämpfe) · ab 90 %: zusätzlich Geld' }
 ];
 
 /* ---------- Wer stützt wen? Zu schwere Gewichte mit schwacher Stütz-Gruppe = kleines Zerrungsrisiko ---------- */

@@ -53,9 +53,14 @@ Kommunikation zwischen Teilen: `MK.on(name, fn)` / `MK.emit(name, data)`.
 - In Imperium und Skillbaum fliegen keine Geldscheine/Hanteln.
 - Shop-/Reiter-Bereich: **kein Comic-Look** (Barlow-Schriften, klare Karten). Comic-Look nur in der Bühne und bei großen Momenten.
 - Knöpfe haben einen 3D-Drück-Effekt. An/Aus-Schalter: Knopf exakt mittig.
-- Farbkonzept Laden/Imperium/Übungsauswahl (Variablen `--k-*` in index.html): Sand-Fläche, weiße Karten mit warmem Rahmen; Knöpfe: Kaufen grün, Diamanten petrol, Nebenaktion weiß mit Rahmen, zu teuer grau.
+- Farbkonzept Laden/Imperium/Küche/Übungsauswahl (Variablen `--k-*` in index.html): Sand-Fläche, weiße Karten mit **schwarzem Rahmen**; Knöpfe: Kaufen grün, Diamanten petrol, Nebenaktion weiß mit Rahmen, zu teuer grau.
 - Hantelscheiben im Profil (von der Seite) fast rechteckig mit nur leicht gerundeten Ecken; nur die Scheibenfläche ist rund.
 - Kühlschrank und Boombox sehen je Stufe (`S.eq.kuehl` / `S.eq.boombox`, 1–6) anders aus (Retro → modern → Glastür → Edelstahl-Doppeltür; Kassettenrekorder → Boombox → große Boombox → Anlage).
+- Pokal-Regal (2D) sucht sich automatisch Platz rechts neben Kühlschrank/Boombox, damit es nie verdeckt wird.
+- Meal-Prep: 100 % ist in Einzelfällen möglich (Toleranz je Ziel in `MK.PREP_GOALS[].tol`), 100 % = doppeltes Geld.
+- Sponsor unterschreiben = großer Moment (`U.sponsorDeal`): Vertrag, Unterschrift, DEAL-Stempel, Blitze, Konfetti; danach Sponsor-Banner an der Theke.
+- Spielversion steht oben rechts neben dem Diamanten-Shop (die Windows-App gibt sie per `?v=` an index.html).
+- Updates der Windows-App (main.js): nur EINE Frage pro Version, „Jetzt neu starten“ → speichern, still installieren, App öffnet sich von allein; „Später“ → still beim Schließen. Merkdatei `update-state.json` im userData-Ordner.
 - Spielstand übertragen: Code über Supabase (`app/js/transfer.js`, `app/js/cloud-config.js`, Einrichtung in `supabase/README.md`), Datei als Notlösung.
 
 ## Leistung (wichtig auch für 3D)

@@ -579,19 +579,20 @@ const PREPC = {};
 MK.prepCombos = goal => { if (PREPC[goal]) return PREPC[goal]; const ids = MK.FOODS.map(f => f.id), out = [];
   for (let i = 0; i < ids.length; i++) for (let j = i + 1; j < ids.length; j++) for (let k = j + 1; k < ids.length; k++) { const c = [ids[i], ids[j], ids[k]]; if (MK.prepScore(c, goal).sc >= .9) out.push(c); }
   return (PREPC[goal] = out); };
-MK.prepOffer = function () { const S = MK.S, key = S.prep.made + ':' + S.prep.goal; if (!S.prep.offer.length || S.prep.offerT !== key) { const r = MK.seedRand('prep' + key + S.created), C = MK.prepCombos(S.prep.goal), sure = C[Math.floor(r() * C.length)] || [], pool = MK.FOODS.map(f => f.id).filter(id => !sure.includes(id)), out = sure.slice();
+MK.prepOffer = function () { const S = MK.S, key = S.prep.made + ':' + S.prep.goal; if (!S.prep.offer.length || S.prep.offerT !== key) { const r = MK.seedRand('prep' + key + S.created), C = MK.prepCombos(S.prep.goal), C1 = C.filter(c => MK.prepScore(c, S.prep.goal).sc >= 1), pickP = C1.length && r() < .12, sure = (pickP ? C1[Math.floor(r() * C1.length)] : C[Math.floor(r() * C.length)]) || [], pool = MK.FOODS.map(f => f.id).filter(id => !sure.includes(id)), out = sure.slice();
     while (out.length < 6) out.push(pool.splice(Math.floor(r() * pool.length), 1)[0]); for (let i = out.length - 1; i > 0; i--) { const j = Math.floor(r() * (i + 1)); [out[i], out[j]] = [out[j], out[i]]; } S.prep.offer = out; S.prep.offerT = key; S.prep.pick = []; } return S.prep.offer; };
 MK.prepScore = function (pick, goal) {
   if (!pick.length) return { r: [0, 0, 0], sc: 0 }; let p = 0, c = 0, f = 0;
   pick.forEach(id => { const F = MK.FOODS.find(x => x.id === id); p += F.p * 4; c += F.c * 4; f += F.f * 9; });
-  const tot = p + c + f || 1, r = [p / tot, c / tot, f / tot], t = MK.PREP_GOALS.find(g => g.id === goal).t, err = Math.abs(r[0] - t[0]) + Math.abs(r[1] - t[1]) + Math.abs(r[2] - t[2]);
-  return { r, sc: pick.length < 3 ? 0 : clamp(1 - err / 1.2, 0, 1) };
+  const tot = p + c + f || 1, r = [p / tot, c / tot, f / tot], GL = MK.PREP_GOALS.find(g => g.id === goal), t = GL.t, tol = GL.tol || 0, err = Math.abs(r[0] - t[0]) + Math.abs(r[1] - t[1]) + Math.abs(r[2] - t[2]);
+  // kleine Toleranz: sehr gute Kombis zählen als genau 100 % (gibt es in Einzelfällen)
+  return { r, sc: pick.length < 3 ? 0 : clamp(1 - Math.max(0, err - tol) / (1.2 - tol), 0, 1) };
 };
 MK.cook = function () {
   const S = MK.S, P = S.prep, { sc } = MK.prepScore(P.pick, P.goal); if (P.pick.length < 3 || !MK.prepReady()) return null;
   const res = { sc, fat: 0, money: 0 };
   if (sc >= .7) { res.fat = P.goal === 'masse' ? 1 : -1; S.fatOff = Math.max(-12, Math.min(15, (S.fatOff || 0) + res.fat)); }
-  if (sc >= .9) { res.money = MK.prepReward(); MK.earn(res.money, true); P.good++; }
+  if (sc >= .9) { res.perfect = sc >= 1; res.money = MK.prepReward() * (res.perfect ? 2 : 1); MK.earn(res.money, true); P.good++; }
   MK.prepLog().push(Date.now()); P.made++; P.pick = []; MK.dirty(); return res;
 };
 /* Wochen-Challenge: immer die schwächste offene Muskelgruppe */

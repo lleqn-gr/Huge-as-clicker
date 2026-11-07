@@ -491,10 +491,13 @@ function drawGymStatic(t) {
   return st;
 }
 /* Pokal-Vitrine an der Wand: gewonnene Turnier-Pokale stehen sichtbar im Gym */
-const CASE_X = [.66, .91, .7, .7, .72], TCOL = { bronze: ['#cd7f32', '#8a5320'], silber: ['#e3e8ee', '#9aa3ad'], gold: ['#f2c230', '#a77d0e'], platin: ['#cfeef7', '#7fb7c9'], diamant: ['#8ff0ff', '#2fa9c9'] };
+const CASE_X = [.66, .91, .7, .74, .72], TCOL = { bronze: ['#cd7f32', '#8a5320'], silber: ['#e3e8ee', '#9aa3ad'], gold: ['#f2c230', '#a77d0e'], platin: ['#cfeef7', '#7fb7c9'], diamant: ['#8ff0ff', '#2fa9c9'] };
 function drawTrophyCase(t) {
   const S = MK.S, won = MK.TOURNEYS.filter(T => S.trophies[T.id]); if (!won.length && S.fame < 10) return;
-  const G = Sc.geo(), cw = Math.min(W * .14, 120), chh = G.yF * .26, x0 = W * CASE_X[S.gym] - cw / 2, y0 = G.yF * .14;
+  const G = Sc.geo(), chh = G.yF * .26, y0 = G.yF * .14; let cw = Math.min(W * .14, 120), x0 = W * CASE_X[S.gym] - cw / 2;
+  // Platz rechts neben Kühlschrank/Boombox suchen (die stehen davor und würden das Regal sonst verdecken)
+  const hi = r => r && r.y < y0 + chh, kR = S.eq.kuehl && hi(Sc.kuehlRect) && Sc.kuehlRect, bR = S.eq.boombox && hi(Sc.boomRect) && Sc.boomRect, right = Math.max(kR ? kR.x + kR.w : 0, bR ? bR.x + bR.w : 0);
+  if (right > 0) { const l = right + 6, free = W - l - 8, w = Math.min(cw, free); if (w >= 38) { cw = w; x0 = l + (free - w) / 2; } }
   c.fillStyle = '#4a321c'; c.fillRect(x0 - 4, y0 - 4, cw + 8, chh + 8); c.fillStyle = 'rgba(30,40,50,.55)'; c.fillRect(x0, y0, cw, chh);
   c.fillStyle = '#6b4a2b'; [.5, 1].forEach(k => c.fillRect(x0, y0 + chh * k - 3, cw, 3));
   MK.TOURNEYS.forEach((T, i) => { const n = S.trophies[T.id] || 0, col = TCOL[T.trophy], cx = x0 + cw * ((i % 3) + .5) / 3, by = y0 + chh * (i < 3 ? .5 : 1) - 3, s = chh * .0055 * (1 + T.tier * .06);
@@ -659,6 +662,13 @@ function drawBar(G, k, t) {
   barBox(x0 + Fx + lw, x1, yF2, fh0, dx, dd, st, K, t, .1, true);
   c.fillStyle = st.txt; c.font = st.font.replace('S', Math.round(15 * K)); c.textAlign = 'center'; c.textBaseline = 'middle'; if (st.gold) { c.shadowColor = 'rgba(230,180,34,.7)'; c.shadowBlur = 8 * K; }
   c.fillText(MK.GYMS[MK.S.gym].name, x0 + Fx + lw + (cw - Fx - lw) * .5, yt2 + fh0 * .6); c.shadowBlur = 0; c.textBaseline = 'alphabetic';
+  // Sponsor-Banner vorn an der Theke (bleibt, solange der Vertrag läuft; blitzt kurz nach dem Unterschreiben)
+  const sp = MK.S.sponsor && MK.SPONSORS.find(x => x.id === MK.S.sponsor);
+  if (sp) { const bx0 = x0 + Fx + lw + 10 * K, bx1 = Math.min(x1, W) - 10 * K, bh = 11 * K, by = yt2 + fh0 * .8, ag = (now - (Sc.sponsorT || 0)) / 1000, fl = ag < 3 ? Math.max(0, Math.sin(ag * 9)) * (1 - ag / 3) : 0;
+    c.fillStyle = sp.col; c.beginPath(); c.roundRect(bx0, by, bx1 - bx0, bh, 2 * K); c.fill(); c.strokeStyle = 'rgba(0,0,0,.45)'; c.lineWidth = 1; c.stroke();
+    if (fl > 0) { c.fillStyle = 'rgba(255,255,255,' + (fl * .7) + ')'; c.fill(); }
+    c.fillStyle = MK.Fig.lum(sp.col) > .55 ? '#111' : '#fff'; c.font = '800 ' + Math.round(8 * K) + 'px "Arial Narrow", Arial, sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText(sp.logo, (bx0 + bx1) / 2, by + bh / 2 + .5); c.textBaseline = 'alphabetic'; }
   const onTop = (fxp, dep) => ({ x: x0 + cw * fxp - dx * dep, y: yt2 - dd * dep });
   [[.84, .5, '#f4efe4', '#3a86ff', 0], [.92, .35, '#26262c', '#c9ced4', 1]].forEach(([fxp, dep, body, lid, big]) => { const p = onTop(fxp, dep), bh = (big ? 26 : 18) * K, bw2 = (big ? 17 : 12) * K;
     c.fillStyle = 'rgba(0,0,0,.25)'; c.beginPath(); c.ellipse(p.x + 3 * K, p.y, bw2 * .6, 2.5 * K, 0, 0, TAU); c.fill();
@@ -1524,13 +1534,13 @@ function drawHandProps(R, pose, wi, sc, layer) {
 /* ======================================================================
    EFFEKTE
    ====================================================================== */
-Sc.particle = function (k, x, y, n) {
+Sc.particle = function (k, x, y, n, cols) {
   if (MK.S.set.quality === 'niedrig' && k !== 'confetti') n = Math.ceil((n || 1) / 3);
   for (let i = 0; i < (n || 1); i++) {
     const p = { k, x, y, vx: rnd(-1, 1), vy: rnd(-2, -.5), life: 1, r: rnd(2, 4), rot: rnd(0, 6), col: '#fff' };
     if (k === 'chalk') { p.vx = rnd(-1.5, 1.5); p.vy = rnd(-1.2, -.2); p.r = rnd(3, 8); }
     if (k === 'sweat') { p.vx = rnd(-1.5, 1.5); p.vy = rnd(-2.5, -1); p.col = '#9fd3ff'; }
-    if (k === 'confetti') { p.vx = rnd(-3, 3); p.vy = rnd(-6, -2); p.col = pick(['#ffd23f', '#ee4035', '#3a86ff', '#2bb673', '#ff8fb1', '#ffffff']); p.r = rnd(3, 6); }
+    if (k === 'confetti') { p.vx = rnd(-3, 3); p.vy = rnd(-6, -2); p.col = pick(cols || ['#ffd23f', '#ee4035', '#3a86ff', '#2bb673', '#ff8fb1', '#ffffff']); p.r = rnd(3, 6); }
     if (k === 'coin') { p.vx = rnd(-2.4, 2.4); p.vy = rnd(-4.5, -2); p.col = '#3fa860'; }
     if (k === 'spark') { const a = rnd(0, TAU), sp = rnd(2, 6); p.vx = Math.cos(a) * sp; p.vy = Math.sin(a) * sp; p.col = pick(['#ffd23f', '#ff8a3d', '#ffffff']); p.r = rnd(1.5, 3); }
     if (k === 'note') { p.vx = rnd(-.3, .3); p.vy = -.6; p.col = '#2affb0'; }

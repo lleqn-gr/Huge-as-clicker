@@ -108,7 +108,7 @@ U.renderTab = function () {
   if (tr.parentNode === P) $('stage').appendChild(tr); // Trainingsbereich zurück unter die Bühne
   document.querySelectorAll('[data-tab]').forEach(b => b.setAttribute('aria-selected', b.dataset.tab === tab));
   requestAnimationFrame(U.tabMark);
-  P.classList.toggle('wardmode', tab === 'ward'); P.classList.toggle('clean', tab === 'shop' || tab === 'biz');
+  P.classList.toggle('wardmode', tab === 'ward'); P.classList.toggle('clean', tab === 'shop' || tab === 'biz' || tab === 'fridge');
   if (tab === 'train') { P.innerHTML = ''; P.appendChild(tr); }
   else if (locked) MK.paneTeaser(P, lockF);
   else (({ comp: paneComp, biz: paneBiz, shop: paneShop, gym: paneGym, fridge: paneFridge, music: paneMusic, dshop: paneDShop, trainer: paneTrainer, ward: paneWard, daily: paneDaily, troph: paneTroph, opt: paneOpt })[tab] || (MK.EXTRA_PANES || {})[tab] || paneComp)(P);
@@ -387,27 +387,58 @@ function paneShop(P) {
   P.querySelectorAll('[data-trgo]').forEach(b => b.onclick = () => U.openExtra('trainer'));
   P.querySelectorAll('[data-partner]').forEach(b => b.onclick = () => buy(MK.partnerCost(S.partner.lv), () => { S.partner.lv++; }, S.partner.lv ? 'Kevin trainiert jetzt härter!' : 'Kevin trainiert jetzt mit dir!'));
   bindPrep(P);
-  P.querySelectorAll('[data-spon]').forEach(b => b.onclick = () => { const id = b.dataset.spon; if (S.sponsor === id) { S.sponsor = null; U.toast('Vertrag gekündigt'); } else { const r = MK.signSponsor(id); if (!r) return; const sp = MK.SPONSORS.find(x => x.id === id); U.toast(r === 'first' && sp.bonus ? `${sp.name} unterschrieben! Bonus: ${MK.rewardText(sp.bonus)}` : `${sp.name} unterschrieben!`, 'big'); MK.Scene.particle('confetti', MK.Scene.W / 2, MK.Scene.H * .3, 40); } MK.Audio.play('buy'); U.refresh(); MK.save(); });
+  P.querySelectorAll('[data-spon]').forEach(b => b.onclick = () => { const id = b.dataset.spon; if (S.sponsor === id) { S.sponsor = null; U.toast('Vertrag gekündigt'); } else { const r = MK.signSponsor(id); if (!r) return; const sp = MK.SPONSORS.find(x => x.id === id); U.sponsorDeal(sp, r === 'first'); } MK.Audio.play('buy'); U.refresh(); MK.save(); });
   P.querySelectorAll('[data-goshop]').forEach(b => b.onclick = () => U.openExtra('dshop'));
 }
+/* Sponsor unterschrieben: großer Moment auf der Bühne (nur Optik)
+   Vertrag fällt ins Bild → Unterschrift wird geschrieben → DEAL-Stempel + Kamerablitze → Vertrag fliegt auf die Brust → Konfetti in Sponsorfarbe */
+U.sponsorDeal = function (sp, first) {
+  const Sc = MK.Scene, V = $('view'), msg = first && sp.bonus ? `${sp.name} unterschrieben! Bonus: ${MK.rewardText(sp.bonus)}` : `${sp.name} unterschrieben!`;
+  const chest = () => { const R = Sc.lastPlayer, cv = $('cv'), cr = cv.getBoundingClientRect(), vr = V.getBoundingClientRect(), k = cr.width / (Sc.W || 1);
+    const p = R && R.neck && R.hip ? { x: (R.neck.x * 2 + R.hip.x) / 3, y: (R.neck.y * 2 + R.hip.y) / 3 } : { x: Sc.W / 2, y: Sc.H * .5 }; return { x: cr.left - vr.left + p.x * k, y: cr.top - vr.top + p.y * k, cx: p.x, cy: p.y }; };
+  const finish = () => { Sc.sponsorT = performance.now(); const c = chest(); Sc.particle('confetti', c.cx, c.cy, 60, [sp.col, sp.col, '#ffffff', '#ffd23f']); Sc.setFace('proud', 2500); MK.Audio.play('win'); U.toast(msg, 'big'); };
+  if (MK.S.set.reduce || !V) { finish(); return; }
+  const old = V.querySelector('.sdeal'); if (old) old.remove();
+  const ink = logoInk(sp.col), el = document.createElement('div'); el.className = 'sdeal'; el.style.setProperty('--sc', sp.col); el.style.setProperty('--si', ink);
+  el.innerHTML = [0, 1, 2, 3, 4, 5].map(i => `<i class="sd-fl" style="left:${8 + Math.random() * 84}%;top:${8 + Math.random() * 60}%;animation-delay:${1.4 + i * .17 + Math.random() * .1}s"></i>`).join('')
+    + `<div class="sd-card"><div class="sd-logo">${esc(sp.logo)}</div><b class="sd-t">Sponsorvertrag</b><i class="sd-l"></i><i class="sd-l s"></i><i class="sd-l"></i>
+    <div class="sd-sl"><svg class="sd-sig" viewBox="0 0 160 40" aria-hidden="true"><path d="M6 28c6-14 12-20 15-16s-6 18-2 18 10-16 14-15-2 13 2 13 7-9 10-9 1 8 5 8 8-12 12-12-3 12 1 12 9-6 13-6 4 5 9 4 12-5 20-7 18-2 34-4"/></svg></div>
+    <span class="sd-stamp">DEAL!</span></div><i class="sd-ring"></i>`;
+  V.appendChild(el);
+  const c0 = chest(); el.style.setProperty('--tx', c0.x + 'px'); el.style.setProperty('--ty', c0.y + 'px');
+  setTimeout(() => { MK.Audio.play('whoosh'); }, 300);
+  setTimeout(() => { MK.Audio.play('clank', 2); Sc.fx.shake = Math.max(Sc.fx.shake, 4); }, 1350);
+  setTimeout(() => { el.classList.add('fly'); MK.Audio.play('whoosh'); }, 2350);
+  setTimeout(finish, 2800);
+  setTimeout(() => el.remove(), 3700);
+};
 /* Meal-Prep: Ziel wählen, 3 von 6 Zutaten, Makros treffen */
 function prepCard() {
-  const S = MK.S, P = S.prep, offer = MK.prepOffer(), G = MK.PREP_GOALS.find(g => g.id === P.goal), sc = MK.prepScore(P.pick, P.goal), left = MK.prepLeft(), ready = left > 0, kfa = MK.kfa();
-  const bar = (r, t) => `<div class="mac">${['Eiweiß', 'Kohlenhydrate', 'Fett'].map((n, i) => `<div><span>${n}</span><b><i style="width:${Math.round(r[i] * 100)}%"></i><em style="left:${Math.round(t[i] * 100)}%"></em></b><small>${Math.round(r[i] * 100)} % / Ziel ${Math.round(t[i] * 100)} %</small></div>`).join('')}</div>`;
-  const pct = Math.round(sc.sc * 100), tier = P.pick.length < 3 ? '' : pct >= 90 ? 'g90' : pct >= 70 ? 'g70' : 'g0';
-  return `<div class="card prep"><h4>Meal-Prep ${ib('Wähle Masse oder Definition und 3 Zutaten, die die Makros treffen. Ab 70 %: ±1 % Körperfett. Ab 90 %: zusätzlich Geld (wächst mit deinem Level). Eine Kombi mit über 90 % gibt es immer. 3 Mal pro 5 Minuten. Ohne Kochen passiert nichts von allein.')}</h4>
-    <div class="prepstat"><span>KFA <b>${kfa} %</b></span><span>Gewicht <b>${MK.fmt1(MK.bodyKg())} kg</b></span>${(() => { const x = Math.max(-.12, Math.min(.2, (kfa - 18) * .015)); return `<span>Masse-Effekt <b class="${x >= 0 ? 'okc' : 'noc'}">${x >= 0 ? '+' : '−'}${Math.round(Math.abs(x) * 100)} % XP</b></span>`; })()}</div>
-    <div class="opts">${MK.PREP_GOALS.map(g => `<button class="opt" data-goal="${g.id}" aria-pressed="${P.goal === g.id}">${g.id === 'masse' ? '🍔' : '🥗'} ${g.name}</button>`).join('')}</div><p class="small">${G.desc}</p>
-    <div class="opts">${offer.map(id => { const F = MK.FOODS.find(x => x.id === id); return `<button class="opt" data-food="${id}" aria-pressed="${P.pick.includes(id)}">${F.name}<small>${F.p}/${F.c}/${F.f}</small></button>`; }).join('')}</div>
-    ${bar(sc.r, G.t)}<div class="row"><p class="small">${P.pick.length < 3 ? `Noch ${3 - P.pick.length} Zutat${3 - P.pick.length > 1 ? 'en' : ''}` : `Treffer: <b class="${tier}">${pct} %</b> ${pct >= 90 ? `→ ${P.goal === 'masse' ? '+' : '−'}1 % KFA + ${MK.fmt(MK.prepReward())} €` : pct >= 70 ? `→ ${P.goal === 'masse' ? '+' : '−'}1 % KFA` : '→ keine Wirkung'}`}</p>
-    <button class="btn ok" id="cook" ${ready && P.pick.length === 3 ? '' : 'disabled'}>${ready ? `Kochen <small>(${left}/3)</small>` : 'Wieder in ' + Math.max(1, Math.ceil((MK.prepNext() - Date.now()) / 60000)) + ' min'}</button></div></div>`;
+  const S = MK.S, P = S.prep, offer = MK.prepOffer(), sc = MK.prepScore(P.pick, P.goal), G = MK.PREP_GOALS.find(g => g.id === P.goal), left = MK.prepLeft(), ready = left > 0, kfa = MK.kfa(), n = P.pick.length;
+  const pct = Math.floor(sc.sc * 100), full = n === 3, tier = !full ? '' : pct >= 100 ? 'g100' : pct >= 90 ? 'g90' : pct >= 70 ? 'g70' : 'g0', sign = P.goal === 'masse' ? '+' : '−';
+  const step = !full ? 2 : 3; // aktueller Schritt
+  const bar = (r, t) => `<div class="mac">${['Eiweiß', 'Kohlenhydrate', 'Fett'].map((nm, i) => { const d = Math.abs(r[i] - t[i]); return `<div><span>${nm}</span><b class="${full ? (d < .04 ? 'hit' : d < .1 ? 'near' : '') : ''}"><i style="width:${Math.round(r[i] * 100)}%"></i><em style="left:${Math.round(t[i] * 100)}%"></em></b><small>${Math.round(r[i] * 100)} % · Ziel ${Math.round(t[i] * 100)} %</small></div>`; }).join('')}</div>`;
+  const F = id => MK.FOODS.find(x => x.id === id);
+  const slots = [0, 1, 2].map(i => P.pick[i] ? `<button class="pslot on" data-food="${P.pick[i]}" aria-label="${F(P.pick[i]).name} entfernen">${F(P.pick[i]).name}<i>×</i></button>` : `<span class="pslot">${i + 1}</span>`).join('');
+  const tiers = [[70, `${sign}1 % KFA`], [90, '+ Geld'], [100, 'Geld ×2']].map(([p, t]) => `<span class="ptier${full && pct >= p ? ' on' : ''}"><b>${p} %</b>${t}</span>`).join('');
+  return `<div class="card prep">
+    <div class="phead"><h4>Meal-Prep ${ib('Ziel wählen, 3 Zutaten antippen. Die grünen Balken sollen bei den roten Linien enden. Ab 70 %: ±1 % Körperfett. Ab 90 %: Geld (wächst mit deinem Level). 100 %: doppeltes Geld. Eine Kombi mit über 90 % gibt es immer, manchmal sogar 100 %. 3 Mal pro 5 Minuten.')}</h4><span class="pleft">${ready ? `${left}/3 frei` : '⏳ ' + Math.max(1, Math.ceil((MK.prepNext() - Date.now()) / 60000)) + ' min'}</span></div>
+    <ol class="psteps"><li class="done"><b>1</b>Ziel</li><li class="${step === 2 ? 'cur' : 'done'}"><b>2</b>3 Zutaten</li><li class="${step === 3 ? 'cur' : ''}"><b>3</b>Balken auf die Linie</li></ol>
+    <div class="seg pgoal">${MK.PREP_GOALS.map(g => `<button data-goal="${g.id}" aria-pressed="${P.goal === g.id}">${g.id === 'masse' ? '🍔' : '🥗'} ${g.name}</button>`).join('')}</div>
+    <div class="pslots">${slots}</div>
+    <div class="pfoods">${offer.map(id => `<button class="pfood" data-food="${id}" aria-pressed="${P.pick.includes(id)}" ${!P.pick.includes(id) && full ? 'disabled' : ''}><b>${F(id).name}</b><small>E ${F(id).p} · K ${F(id).c} · F ${F(id).f}</small></button>`).join('')}</div>
+    ${bar(sc.r, G.t)}
+    <div class="ptiers">${tiers}</div>
+    <div class="pres"><div class="pscore ${tier}">${full ? pct + ' %' : `noch ${3 - n}`}<small>${full ? (pct >= 100 ? 'Perfekt!' : pct >= 90 ? `+${MK.fmt(MK.prepReward())} €` : pct >= 70 ? sign + '1 % KFA' : 'keine Wirkung') : 'Zutat' + (3 - n > 1 ? 'en' : '')}</small></div>
+    <button class="btn ok" id="cook" ${ready && full ? '' : 'disabled'}>${ready ? 'Kochen' : 'Wieder in ' + Math.max(1, Math.ceil((MK.prepNext() - Date.now()) / 60000)) + ' min'}</button></div>
+    <div class="prepstat"><span>KFA <b>${kfa} %</b></span><span>Gewicht <b>${MK.fmt1(MK.bodyKg())} kg</b></span>${(() => { const x = Math.max(-.12, Math.min(.2, (kfa - 18) * .015)); return `<span>Masse-Effekt <b class="${x >= 0 ? 'okc' : 'noc'}">${x >= 0 ? '+' : '−'}${Math.round(Math.abs(x) * 100)} % XP</b></span>`; })()}</div></div>`;
 }
 function bindPrep(P) {
   const S = MK.S, re = () => { const el = P.querySelector('.prep'); if (el) { el.outerHTML = prepCard(); bindPrep(P); } };
   P.querySelectorAll('[data-goal]').forEach(b => b.onclick = () => { S.prep.goal = b.dataset.goal; MK.Audio.play('tap'); re(); });
   P.querySelectorAll('[data-food]').forEach(b => b.onclick = () => { const id = b.dataset.food, pk = S.prep.pick, i = pk.indexOf(id); if (i >= 0) pk.splice(i, 1); else if (pk.length < 3) pk.push(id); MK.Audio.play('tap'); re(); });
   const ck = P.querySelector('#cook'); if (ck) ck.onclick = () => { const r = MK.cook(); if (!r) return; MK.Audio.play(r.money ? 'win' : 'buy'); MK.Scene.setFace('proud', 1500); MK.Scene.eat && MK.Scene.eat('prep');
-    U.toast(`${Math.round(r.sc * 100)} % getroffen – ${r.fat ? `${r.fat > 0 ? '+' : '−'}1 % Körperfett` : 'keine Wirkung'}${r.money ? ` · +${MK.fmt(r.money)} €` : ''}`, r.sc >= .9 ? 'big' : ''); if (r.money) MK.Scene.particle('coin', MK.Scene.W / 2, MK.Scene.H / 2, 10); MK.save(); U.refresh(); U.quick(); };
+    U.toast(`${r.perfect ? 'PERFEKT! ' : ''}${Math.floor(r.sc * 100)} % getroffen – ${r.fat ? `${r.fat > 0 ? '+' : '−'}1 % Körperfett` : 'keine Wirkung'}${r.money ? ` · +${MK.fmt(r.money)} €` : ''}`, r.sc >= .9 ? 'big' : ''); if (r.money) MK.Scene.particle('coin', MK.Scene.W / 2, MK.Scene.H / 2, r.perfect ? 24 : 10); if (r.perfect) MK.Scene.particle('confetti', MK.Scene.W / 2, MK.Scene.H * .3, 30); MK.save(); U.refresh(); U.quick(); };
 }
 function eat(m) { const S = MK.S, e = m.eff; if (e.pump) { S.pump = Math.min(1, S.pump + e.pump); if (S.beastCd > 0) S.pump = Math.min(.97, S.pump); if (S.pump >= 1 && S.beastOn <= 0) { S.beastOn = 10 + MK.bonus().beastDur; S.stats.beasts++; MK.emit('beast'); } } if (e.compBuff) S.compBuff = e.compBuff;
   if (e.buff) { S.buffs = S.buffs.filter(b => b.k !== e.buff.k); S.buffs.push({ k: e.buff.k, v: e.buff.v, until: Date.now() + e.buff.t * 1000 * (1 + MK.bonus().mealDur) }); } MK.Scene.eat(m.id); }
@@ -427,11 +458,13 @@ function paneGym(P) {
 }
 /* --- Kühlschrank (nur über den Kühlschrank im Gym) --- */
 function paneFridge(P) {
-  const S = MK.S; let h = `<h3 class="sh">Kühlschrank ${ib('Essen gibt kurze Boni. Meal-Prep: Ziel wählen, 3 Zutaten, Makros treffen. Mehr Gerichte mit höherer Kühlschrank-Stufe (Laden → Geräte).')}</h3>`;
+  const S = MK.S; let h = secH('Kochen', 'Triff die Makros – Belohnung je nach Treffer.');
   h += prepCard();
+  h += secH('Essen kaufen', 'Sofort-Boni. Mehr Gerichte mit besserem Kühlschrank (Laden → Geräte).');
+  h += '<div class="meals">';
   MK.MEALS.forEach(m => { const ok = S.eq.kuehl >= m.kl, pr = MK.mealPrice(m);
-    h += `<div class="card meal ${ok ? '' : 'locked'}"><div class="row"><div><h4>${m.name}</h4><p class="small">${ok ? m.desc : '🔒 Kühlschrank ' + MK.MATERIAL[m.kl - 1].name}</p></div>${ok ? `<button class="btn ok" data-meal="${m.id}" data-pr="${pr}">${MK.fmt(pr)} €</button>` : ''}</div></div>`; });
-  P.innerHTML = h; bindPrep(P);
+    h += `<div class="card meal ${ok ? '' : 'locked2'}"><div class="row"><div><h4>${m.name}</h4><p class="small">${ok ? m.desc : '🔒 Kühlschrank ' + MK.MATERIAL[m.kl - 1].name}</p></div>${ok ? `<button class="btn ok" data-meal="${m.id}" data-pr="${pr}">${MK.fmt(pr)} €</button>` : ''}</div></div>`; });
+  P.innerHTML = h + '</div>'; bindPrep(P);
   P.querySelectorAll('[data-meal]').forEach(b => b.onclick = () => { const m = MK.MEALS.find(x => x.id === b.dataset.meal), pr = +b.dataset.pr; if (!MK.spend(pr)) { U.toast(`Dir fehlen noch ${MK.fmt(pr - S.money)} €`); MK.Audio.play('error'); return; } eat(m); MK.dirty(); MK.Audio.play('buy'); U.toast(m.name + ' 😋'); U.refresh(); MK.save(); });
 }
 function buyRare(g, id) { const S = MK.S, it = MK.WARD[g].items.find(i => i.id === id); if (!it) return false; if (S.dia < it.dia) { U.toast(`Dir fehlen noch ${it.dia - S.dia} 💎`); MK.Audio.play('error'); return false; }
