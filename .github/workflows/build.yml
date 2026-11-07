@@ -32,6 +32,14 @@ jobs:
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      # Web-Version für Netlify: Inhalt von app/ als ZIP (index.html liegt direkt oben im ZIP).
+      # 7z statt Compress-Archive, damit die Pfade im ZIP Schrägstriche haben (sonst Probleme auf Linux-Servern).
+      - name: Web-ZIP für Netlify packen
+        shell: bash
+        run: |
+          V="1.0.${{ github.run_number }}"
+          cd app && 7z a -tzip "../dist/Muskelklicker-Web-$V.zip" . > /dev/null
+
       - name: Release mit allen Dateien veröffentlichen
         shell: bash
         env:
@@ -39,4 +47,4 @@ jobs:
         run: |
           V="1.0.${{ github.run_number }}"
           ls dist
-          gh release create "v$V" dist/*.exe dist/*.blockmap dist/latest.yml --title "$V" --notes "Muskelklicker $V" --target "${{ github.sha }}"
+          gh release create "v$V" dist/*.exe dist/*.blockmap dist/latest.yml dist/*.zip --title "$V" --notes "Muskelklicker $V – Windows: Setup-.exe · Netlify: Muskelklicker-Web-$V.zip" --target "${{ github.sha }}"
